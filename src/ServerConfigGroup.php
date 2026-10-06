@@ -70,11 +70,12 @@ final class ServerConfigGroup{
 
 	public function getConfigString(string $variable, string $defaultValue = "") : string{
 		$v = getopt("", ["$variable::"]);
-		if(isset($v[$variable])){
-			return (string) $v[$variable];
+		if(is_array($v) && isset($v[$variable]) && is_string($v[$variable])){
+			return $v[$variable];
 		}
 
-		return $this->serverProperties->exists($variable) ? (string) $this->serverProperties->get($variable) : $defaultValue;
+		$prop = $this->serverProperties->exists($variable) ? $this->serverProperties->get($variable) : null;
+		return is_string($prop) ? $prop : $defaultValue;
 	}
 
 	public function setConfigString(string $variable, string $value) : void{
@@ -83,11 +84,12 @@ final class ServerConfigGroup{
 
 	public function getConfigInt(string $variable, int $defaultValue = 0) : int{
 		$v = getopt("", ["$variable::"]);
-		if(isset($v[$variable])){
+		if(is_array($v) && isset($v[$variable]) && is_string($v[$variable])){
 			return (int) $v[$variable];
 		}
 
-		return $this->serverProperties->exists($variable) ? (int) $this->serverProperties->get($variable) : $defaultValue;
+		$prop = $this->serverProperties->exists($variable) ? $this->serverProperties->get($variable) : null;
+		return is_int($prop) ? $prop : (is_string($prop) ? (int) $prop : $defaultValue);
 	}
 
 	public function setConfigInt(string $variable, int $value) : void{

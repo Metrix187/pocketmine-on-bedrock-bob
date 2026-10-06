@@ -267,7 +267,7 @@ class NetworkSession{
 	}
 
 	protected function createPlayer() : void{
-		$this->server->createPlayer($this, $this->info, $this->authenticated, $this->cachedOfflinePlayerData)->onCompletion(
+		$this->server->createPlayer($this, $this->info ?? throw new AssumptionFailedError(), $this->authenticated, $this->cachedOfflinePlayerData)->onCompletion(
 			$this->onPlayerCreated(...),
 			function() : void{
 				//TODO: this should never actually occur... right?
@@ -306,7 +306,7 @@ class NetworkSession{
 		$permissionHooks = $this->player->getPermissionRecalculationCallbacks();
 		$permissionHooks->add($permHook = function() : void{
 			$this->logger->debug("Syncing available commands and abilities/permissions due to permission recalculation");
-			$this->syncAbilities($this->player);
+			$this->syncAbilities($this->player ?? throw new AssumptionFailedError());
 			$this->syncAvailableCommands();
 		});
 		$this->disposeHooks->add(static function() use ($permissionHooks, $permHook) : void{
@@ -982,7 +982,7 @@ class NetworkSession{
 		}
 
 		if(EncryptionContext::$ENABLED){
-			$this->server->getAsyncPool()->submitTask(new PrepareEncryptionTask($clientPubKey, function(string $encryptionKey, string $handshakeJwt) : void{
+			$this->server->getAsyncPool()->submitTask(new PrepareEncryptionTask($clientPubKey ?? throw new AssumptionFailedError(), function(string $encryptionKey, string $handshakeJwt) : void{
 				if(!$this->connected){
 					return;
 				}
@@ -1014,7 +1014,7 @@ class NetworkSession{
 				$keys[$resourcePack->getPackId()] = $key;
 			}
 		}
-		$event = new PlayerResourcePackOfferEvent($this->info, $resourcePacks, $keys, $packManager->resourcePacksRequired());
+		$event = new PlayerResourcePackOfferEvent($this->info ?? throw new AssumptionFailedError(), $resourcePacks, $keys, $packManager->resourcePacksRequired());
 		$event->call();
 		$this->setHandler(new ResourcePacksPacketHandler($this, $event->getResourcePacks(), $event->getEncryptionKeys(), $event->mustAccept(), function() : void{
 			$this->createPlayer();
@@ -1022,8 +1022,9 @@ class NetworkSession{
 	}
 
 	private function beginSpawnSequence() : void{
-		$this->setHandler(new PreSpawnPacketHandler($this->server, $this->player, $this, $this->invManager));
-		$this->player->setNoClientPredictions(); //TODO: HACK: fix client-side falling pre-spawn
+		$player = $this->player ?? throw new AssumptionFailedError();
+		$this->setHandler(new PreSpawnPacketHandler($this->server, $player, $this, $this->invManager));
+		$player->setNoClientPredictions(); //TODO: HACK: fix client-side falling pre-spawn
 
 		$this->logger->debug("Waiting for chunk radius request");
 	}
@@ -1036,25 +1037,27 @@ class NetworkSession{
 
 	private function onClientSpawnResponse() : void{
 		$this->logger->debug("Received spawn response, entering in-game phase");
-		$this->player->setNoClientPredictions(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
-		$this->player->doFirstSpawn();
+		$player = $this->player ?? throw new AssumptionFailedError();
+		$player->setNoClientPredictions(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
+		$player->doFirstSpawn();
 		$this->forceAsyncCompression = false;
-		$this->setHandler(new InGamePacketHandler($this->player, $this, $this->invManager));
+		$this->setHandler(new InGamePacketHandler($player, $this, $this->invManager));
 	}
 
 	public function onServerDeath(Translatable|string $deathMessage) : void{
 		if($this->handler instanceof InGamePacketHandler){ //TODO: this is a bad fix for pre-spawn death, this shouldn't be reachable at all at this stage :(
-			$this->setHandler(new DeathPacketHandler($this->player, $this, $this->invManager ?? throw new AssumptionFailedError(), $deathMessage));
+			$this->setHandler(new DeathPacketHandler($this->player ?? throw new AssumptionFailedError(), $this, $this->invManager ?? throw new AssumptionFailedError(), $deathMessage));
 		}
 	}
 
 	public function onServerRespawn() : void{
-		$this->entityEventBroadcaster->syncAttributes([$this], $this->player, $this->player->getAttributeMap()->getAll());
-		$this->player->sendData(null);
+		$player = $this->player ?? throw new AssumptionFailedError();
+		$this->entityEventBroadcaster->syncAttributes([$this], $player, $player->getAttributeMap()->getAll());
+		$player->sendData(null);
 
-		$this->syncAbilities($this->player);
+		$this->syncAbilities($player);
 		$this->invManager->syncAll();
-		$this->setHandler(new InGamePacketHandler($this->player, $this, $this->invManager));
+		$this->setHandler(new InGamePacketHandler($player, $this, $this->invManager));
 	}
 
 	public function syncMovement(Vector3 $pos, ?float $yaw = null, ?float $pitch = null, int $mode = MovePlayerPacket::MODE_NORMAL) : void{
@@ -1173,7 +1176,7 @@ class NetworkSession{
 	public function syncAvailableCommands() : void{
 		$commandData = [];
 		foreach($this->server->getCommandMap()->getCommands() as $command){
-			if(isset($commandData[$command->getLabel()]) || $command->getLabel() === "help" || !$command->testPermissionSilent($this->player)){
+			if(isset($commandData[$command->getLabel()]) || $command->getLabel() === "help" || !$command->testPermissionSilent($this->player ?? throw new AssumptionFailedError())){
 				continue;
 			}
 
@@ -1191,7 +1194,7 @@ class NetworkSession{
 			$description = $command->getDescription();
 			$data = new CommandData(
 				$lname, //TODO: commands containing uppercase letters in the name crash 1.9.0 client
-				$description instanceof Translatable ? $this->player->getLanguage()->translate($description) : $description,
+				$description instanceof Translatable ? ($this->player ?? throw new AssumptionFailedError())->getLanguage()->translate($description) : $description,
 				0,
 				CommandPermissions::NORMAL,
 				$aliasObj,
@@ -1213,7 +1216,7 @@ class NetworkSession{
 	 */
 	public function prepareClientTranslatableMessage(Translatable $message) : array{
 		//we can't send nested translations to the client, so make sure they are always pre-translated by the server
-		$language = $this->player->getLanguage();
+		$language = ($this->player ?? throw new AssumptionFailedError())->getLanguage();
 		$parameters = array_map(fn(string|Translatable $p) => $p instanceof Translatable ? $language->translate($p) : $p, $message->getParameters());
 		$untranslatedParameterCount = 0;
 		$translated = $language->translateString($message->getText(), $parameters, "pocketmine.", $untranslatedParameterCount);
@@ -1225,7 +1228,7 @@ class NetworkSession{
 			if(!$this->server->isLanguageForced()){
 				$this->sendDataPacket(TextPacket::translation(...$this->prepareClientTranslatableMessage($message)));
 			}else{
-				$this->sendDataPacket(TextPacket::raw($this->player->getLanguage()->translate($message)));
+				$this->sendDataPacket(TextPacket::raw(($this->player ?? throw new AssumptionFailedError())->getLanguage()->translate($message)));
 			}
 		}else{
 			$this->sendDataPacket(TextPacket::raw($message));
@@ -1238,7 +1241,7 @@ class NetworkSession{
 			if(!$this->server->isLanguageForced()){
 				[$message, $parameters] = $this->prepareClientTranslatableMessage($message);
 			}else{
-				$message = $this->player->getLanguage()->translate($message);
+				$message = ($this->player ?? throw new AssumptionFailedError())->getLanguage()->translate($message);
 			}
 		}
 		$this->sendDataPacket(TextPacket::jukeboxPopup($message, $parameters));
@@ -1279,7 +1282,7 @@ class NetworkSession{
 	 * @phpstan-param \Closure() : void $onCompletion
 	 */
 	public function startUsingChunk(int $chunkX, int $chunkZ, \Closure $onCompletion) : void{
-		$world = $this->player->getLocation()->getWorld();
+		$world = ($this->player ?? throw new AssumptionFailedError())->getLocation()->getWorld();
 		$promiseOrPacket = ChunkCache::getInstance($world, $this->compressor)->request($chunkX, $chunkZ);
 		if(is_string($promiseOrPacket)){
 			$this->sendChunkPacket($promiseOrPacket, $onCompletion, $world);
@@ -1291,8 +1294,9 @@ class NetworkSession{
 				if(!$this->isConnected()){
 					return;
 				}
-				$currentWorld = $this->player->getLocation()->getWorld();
-				if($world !== $currentWorld || ($status = $this->player->getUsedChunkStatus($chunkX, $chunkZ)) === null){
+				$player = $this->player ?? throw new AssumptionFailedError();
+				$currentWorld = $player->getLocation()->getWorld();
+				if($world !== $currentWorld || ($status = $player->getUsedChunkStatus($chunkX, $chunkZ)) === null){
 					$this->logger->debug("Tried to send no-longer-active chunk $chunkX $chunkZ in world " . $world->getFolderName());
 					return;
 				}

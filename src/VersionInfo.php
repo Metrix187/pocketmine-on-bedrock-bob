@@ -27,6 +27,7 @@ use pocketmine\utils\Git;
 use pocketmine\utils\VersionString;
 use function is_array;
 use function is_int;
+use function is_string;
 use function str_repeat;
 
 final class VersionInfo{
@@ -67,7 +68,7 @@ final class VersionInfo{
 				$pharPath = \Phar::running(false);
 				$phar = \Phar::isValidPharFilename($pharPath) ? new \Phar($pharPath) : new \PharData($pharPath);
 				$meta = $phar->getMetadata();
-				if(isset($meta["git"])){
+				if(is_array($meta) && isset($meta["git"]) && is_string($meta["git"])){
 					$gitHash = $meta["git"];
 				}
 			}
