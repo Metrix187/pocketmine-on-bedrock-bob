@@ -25,8 +25,9 @@ namespace pocketmine\network\mcpe\handler;
 
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\NetworkSettingsPacket;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\RequestNetworkSettingsPacket;
+use pocketmine\network\mcpe\ProtocolCompatibilityLayer;
+use function sprintf;
 
 final class SessionStartPacketHandler extends PacketHandler{
 
@@ -40,13 +41,23 @@ final class SessionStartPacketHandler extends PacketHandler{
 
 	public function handleRequestNetworkSettings(RequestNetworkSettingsPacket $packet) : bool{
 		$protocolVersion = $packet->getProtocolVersion();
-		if(!$this->isCompatibleProtocol($protocolVersion)){
+		if(!ProtocolCompatibilityLayer::isProtocolSupported($protocolVersion)){
+			$this->session->getLogger()->debug(sprintf(
+				"[Bob-Network] %s",
+				ProtocolCompatibilityLayer::describeProtocolMismatch($protocolVersion)
+			));
 			$this->session->disconnectIncompatibleProtocol($protocolVersion);
 
 			return true;
 		}
 
-		//TODO: we're filling in the defaults to get pre-1.19.30 behaviour back for now, but we should explore the new options in the future
+		// NetworkSettingsPacket fields (as of bedrock-protocol ~58.x / bedrock-1.26.30):
+		// - compressionThreshold: COMPRESS_EVERYTHING = 1 (compress all game packets)
+		// - compressionAlgorithm: negotiated from server-side Compressor implementation
+		// - clientThrottleEnabled: false (server-side throttle only for now)
+		// - clientThrottleThreshold: 0 (unused when throttle disabled)
+		// - clientThrottleScalar: 0.0 (unused when throttle disabled)
+		// @protocol-version-sensitive — audit when bumping CURRENT_PROTOCOL
 		$this->session->sendDataPacket(NetworkSettingsPacket::create(
 			NetworkSettingsPacket::COMPRESS_EVERYTHING,
 			$this->session->getCompressor()->getNetworkId(),
@@ -57,9 +68,5 @@ final class SessionStartPacketHandler extends PacketHandler{
 		($this->onSuccess)();
 
 		return true;
-	}
-
-	protected function isCompatibleProtocol(int $protocolVersion) : bool{
-		return $protocolVersion === ProtocolInfo::CURRENT_PROTOCOL;
 	}
 }
