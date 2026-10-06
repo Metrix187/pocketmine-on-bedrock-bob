@@ -26,11 +26,11 @@ namespace pocketmine\entity;
 use function min;
 
 final class EntitySizeInfo{
-	private float $eyeHeight;
+	private readonly float $eyeHeight;
 
 	public function __construct(
-		private float $height,
-		private float $width,
+		private readonly float $height,
+		private readonly float $width,
 		?float $eyeHeight = null
 	){
 		$this->eyeHeight = $eyeHeight ?? min($this->height / 2 + 0.1, $this->height);

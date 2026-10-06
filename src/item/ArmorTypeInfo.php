@@ -24,14 +24,14 @@ declare(strict_types=1);
 namespace pocketmine\item;
 
 class ArmorTypeInfo{
-	private ArmorMaterial $material;
+	private readonly ArmorMaterial $material;
 
 	public function __construct(
-		private int $defensePoints,
-		private int $maxDurability,
-		private int $armorSlot,
-		private int $toughness = 0,
-		private bool $fireProof = false,
+		private readonly int $defensePoints,
+		private readonly int $maxDurability,
+		private readonly int $armorSlot,
+		private readonly int $toughness = 0,
+		private readonly bool $fireProof = false,
 		?ArmorMaterial $material = null
 	){
 		$this->material = $material ?? VanillaArmorMaterials::LEATHER();

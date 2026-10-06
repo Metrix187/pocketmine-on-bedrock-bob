@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe;
 
-final class ItemStackInfo{
+readonly final class ItemStackInfo{
 
 	public function __construct(
 		private ?int $requestId,

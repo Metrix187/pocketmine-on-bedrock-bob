@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\scheduler;
 
-final class BulkCurlTaskOperation{
+readonly final class BulkCurlTaskOperation{
 	/**
 	 * @param string[] $extraHeaders
 	 * @param mixed[]  $extraOpts
