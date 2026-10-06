@@ -96,19 +96,82 @@ better optimization by static analysers and JIT.
 
 ---
 
-## Phase 2 — Next Steps
+## Phase 2 — Protocol Mapping & Adapter Layer
 
-Phase 2 targets the Bedrock protocol layer. The groundwork is now in place:
+**Commit prefix:** `[Bob-Network]`
 
-- [ ] Identify the next Minecraft Bedrock release target (post-1.26.30)
-- [ ] Bump `pocketmine/bedrock-protocol` and `pocketmine/bedrock-data` to the
-      new protocol version once upstream packages are published
-- [ ] Audit `src/network/mcpe/convert/` for hardcoded protocol constants that
-      need updating
-- [ ] Audit `src/network/mcpe/handler/` for packet handlers referencing
-      renamed or restructured packet types
-- [ ] Run codegen: `composer update-codegen` to regenerate block/item type
-      constants from the new bedrock-data
-- [ ] Update `src/VersionInfo.php::BASE_VERSION` and `VersionInfo::BUILD_CHANNEL`
+Phase 2 built the handler-layer infrastructure for protocol versioning. Three new
+artifacts were added to `src/network/mcpe/`.
 
-Reference: https://doc.pmmp.io/en/rtfd/
+### 5. `ProtocolCompatibilityLayer` (new file)
+
+**Commit:** `[Bob-Network] Add ProtocolCompatibilityLayer; wire into SessionStartPacketHandler`
+
+| File | Change |
+|---|---|
+| `src/network/mcpe/ProtocolCompatibilityLayer.php` | New static utility class |
+| `src/network/mcpe/handler/SessionStartPacketHandler.php` | Uses new layer; adds mismatch debug log |
+
+`ProtocolCompatibilityLayer` is a single source of truth for which Bedrock protocol
+versions this build accepts. It wraps `ProtocolInfo::CURRENT_PROTOCOL` from the
+`bedrock-protocol` library (no value duplication), provides `isProtocolSupported(int)`
+used by the session handshake, and a `SUPPORTED_PROTOCOLS` list for accepting one
+older version during Mojang's rolling-update window.
+
+`SessionStartPacketHandler` was updated to use `isProtocolSupported()` instead of
+an inline constant comparison, removing the now-redundant `isCompatibleProtocol()`
+method and the stale `//TODO` comment on `NetworkSettingsPacket::create()`. Each
+field of `NetworkSettingsPacket` is now documented inline.
+
+### 6. `StartGamePacket` Field Documentation
+
+**Commit:** `[Bob-Network] Document StartGamePacket field mapping in PreSpawnPacketHandler`
+
+| File | Change |
+|---|---|
+| `src/network/mcpe/handler/PreSpawnPacketHandler.php` | Comments only — no logic change |
+
+Every argument to `StartGamePacket::create()` and every `LevelSettings` field
+assignment now carries an inline comment explaining:
+- What the field controls in the Bedrock binary protocol
+- Why PM sends the specific value (e.g. `naturalregeneration=false` = server-side regen)
+- What the forward path is for unimplemented features (rain/lightning, enchantment seed)
+- `@protocol-version-sensitive` tags on fields whose valid values may change per version
+
+Resolves three `//TODO` comments that had been open since the 1.19.x era.
+
+### 7. `ProtocolVersionChangelog` (new file)
+
+**Commit:** `[Bob-Network] Add ProtocolVersionChangelog — structured protocol bump audit trail`
+
+| File | Change |
+|---|---|
+| `src/network/mcpe/ProtocolVersionChangelog.php` | New static reference class |
+
+Provides a machine-readable + human-readable record of every protocol version
+from 1.21.80 (protocol 767) through 1.26.30 (protocol 858, current):
+
+- `PROTOCOL_*` integer constants for each known version
+- `CHANGELOG` array: per-version metadata (bedrock string, date, summary, affected files)
+- `AUDIT_TARGETS` array: every `@protocol-version-sensitive` file with a prose
+  description of what to check — this is the checklist for future protocol bumps
+
+No runtime effect. Purely additive.
+
+---
+
+## Phase 3 — Next Steps (Block State Mapping)
+
+When the next Bedrock version ships and upstream `pmmp/BedrockProtocol` and
+`pmmp/BedrockData` are updated:
+
+1. Bump `pocketmine/bedrock-protocol` and `pocketmine/bedrock-data` constraints
+2. Add new protocol constant to `ProtocolVersionChangelog::PROTOCOL_*`
+3. Run: `composer update pocketmine/bedrock-protocol pocketmine/bedrock-data`
+4. Run: `composer update-codegen` (regenerates block/item type constants)
+5. Search `@protocol-version-sensitive` in `src/network/mcpe/` — audit each hit
+6. Consult `ProtocolVersionChangelog::AUDIT_TARGETS` for the full checklist
+7. Update `ProtocolCompatibilityLayer::SUPPORTED_PROTOCOLS` with the old version
+   if you want a compatibility window
+
+Reference: https://doc.pmmp.io/en/rtfd/developers/internals-docs/updating-minecraft-protocol.html
