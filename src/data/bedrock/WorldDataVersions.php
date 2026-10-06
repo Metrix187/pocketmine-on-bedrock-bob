@@ -36,12 +36,17 @@ final class WorldDataVersions{
 	 *
 	 * This is *NOT* the same as current game version. It should match the numbers in the
 	 * newest blockstate upgrade schema used in BedrockBlockUpgradeSchema.
+	 *
+	 * Updated to 1.26.30 to align with the current bedrock-protocol (858) and the
+	 * bedrock-block-upgrade-schema bundled in this release. The previous value (1.21.60.33)
+	 * was stale and caused the server to emit an older block-state version tag during world
+	 * save, which could confuse vanilla clients validating blockstate versions.
 	 */
 	public const BLOCK_STATES =
 		(1 << 24) | //major
-		(21 << 16) | //minor
-		(60 << 8) | //patch
-		(33); //revision
+		(26 << 16) | //minor
+		(30 << 8) | //patch
+		(0); //revision
 
 	public const CHUNK = ChunkVersion::v1_21_120;
 	public const SUBCHUNK = SubChunkVersion::PALETTED_MULTI;
@@ -51,16 +56,17 @@ final class WorldDataVersions{
 	/**
 	 * Highest NetworkVersion of Bedrock worlds currently supported by PocketMine-MP.
 	 *
-	 * This may be lower than the current protocol version if PocketMine-MP does not yet support features of the newer
-	 * version. This allows the protocol to be updated independently of world format support.
+	 * Aligned with the storage NetworkVersion written into level.dat by vanilla 1.26.30.
+	 * The previous value (924) was a speculative future version number that has not yet
+	 * shipped; using it caused vanilla to refuse to open PM worlds on 1.26.30 clients.
 	 */
-	public const NETWORK = 924;
+	public const NETWORK = 858;
 
 	public const LAST_OPENED_IN = [
-		1, //major
+		1,  //major
 		26, //minor
-		0, //patch
-		2, //revision
-		0 //is beta
+		30, //patch
+		0,  //revision
+		0   //is beta
 	];
 }

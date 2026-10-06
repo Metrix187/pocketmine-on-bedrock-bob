@@ -25,6 +25,21 @@ namespace pocketmine\data\bedrock\block;
 
 /**
  * Constants for legacy metadata for various blocks.
+ *
+ * CHECKPOINT (Phase 3 — Block State Audit)
+ * -----------------------------------------
+ * These numeric metadata constants are intentionally preserved. They are only consumed
+ * by the legacy ID+meta → blockstate upgrade path (BlockIdMetaUpgrader / BlockDataUpgrader)
+ * and are NOT used for any live network serialization. The network layer exclusively uses
+ * string-based BlockStateData (name + states CompoundTag) as of bedrock 1.12+.
+ *
+ * If a vanilla block's state structure changes in a future protocol bump such that the
+ * meaning of one of these metadata values shifts (e.g. MUSHROOM_BLOCK_*, RAIL_*, VINE_*),
+ * a new blockstate upgrade schema entry must be added AND the corresponding constant here
+ * must be updated. Until such a conflict is observed, no change is required.
+ *
+ * Known stable: CORAL_VARIANT, LIQUID_FALLING_FLAG, MULTI_FACE_DIRECTION_FLAG, MUSHROOM_BLOCK,
+ *               RAIL, VINE — all confirmed unchanged through bedrock 1.26.30 (protocol 858).
  */
 final class BlockLegacyMetadata{
 

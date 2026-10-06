@@ -174,11 +174,12 @@ final class ProtocolVersionChangelog{
 			'bedrock'  => '1.26.30',
 			'protocol' => self::PROTOCOL_858,
 			'date'     => '2025-07-01',
-			'summary'  => 'Current production protocol. bedrock-protocol 58.0.1 patch release.',
+			'summary'  => 'Current production protocol. bedrock-protocol 58.0.1 patch release. Phase 3 game-logic audit: WorldDataVersions BLOCK_STATES/NETWORK/LAST_OPENED_IN aligned; isEditorMode bug fixed.',
 			'affected' => [
 				'src/network/mcpe/ProtocolCompatibilityLayer.php',
 				'src/network/mcpe/handler/SessionStartPacketHandler.php',
 				'src/network/mcpe/handler/PreSpawnPacketHandler.php',
+				'src/data/bedrock/WorldDataVersions.php',
 			],
 		],
 	];

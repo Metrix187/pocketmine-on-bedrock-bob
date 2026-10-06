@@ -174,8 +174,10 @@ class PreSpawnPacketHandler extends PacketHandler{
 				false,
 				false,
 				new NetworkPermissions(disableClientSounds: true),
-				// isEditorMode: true enables the in-game world editor UI — not supported by PM.
-				true,
+				// isEditorMode: false — the world editor UI is not supported by PM.
+				// Previously incorrectly set to true, which caused the client to activate
+				// editor-mode-only UI overlays and suppressed normal survival/creative HUD elements.
+				false,
 				null,
 				new ServerTelemetryData("", "", "", ""),
 				[],
