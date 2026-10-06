@@ -1,4 +1,16 @@
-# End of support announcement
+# PocketMine-MP — Modernization Fork
+
+> **Hackathon Branch:** `modernize/phase1-dependency-bump`
+> **Current Bedrock Protocol:** `858` (Minecraft Bedrock 1.26.30)
+> **PHP Floor:** 8.2+
+>
+> This fork revives the archived PocketMine-MP codebase.
+> Protocol history and upgrade checklist: [`src/network/mcpe/ProtocolVersionChangelog.php`](src/network/mcpe/ProtocolVersionChangelog.php)
+> Full modernization record: [`MODERNIZATION.md`](MODERNIZATION.md)
+
+---
+
+# End of support announcement (original upstream message)
 
 Hello all,
 

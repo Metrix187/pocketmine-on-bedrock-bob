@@ -38,6 +38,26 @@ final class VersionInfo{
 	public const GITHUB_URL = "https://github.com/pmmp/PocketMine-MP";
 
 	/**
+	 * The Minecraft Bedrock Edition protocol version number this build targets.
+	 * Mirrors ProtocolInfo::CURRENT_PROTOCOL from pocketmine/bedrock-protocol.
+	 *
+	 * Kept here so it appears next to BASE_VERSION for easy human lookup without
+	 * needing vendor/ to be installed.
+	 *
+	 * Update this constant whenever the bedrock-protocol dependency is bumped.
+	 * Full protocol history: src/network/mcpe/ProtocolVersionChangelog.php
+	 *
+	 * Current: bedrock-1.26.30 — protocol 858
+	 */
+	public const BEDROCK_PROTOCOL_VERSION = 858;
+
+	/**
+	 * Human-readable Minecraft Bedrock version string matching BEDROCK_PROTOCOL_VERSION.
+	 * Update alongside BEDROCK_PROTOCOL_VERSION.
+	 */
+	public const BEDROCK_VERSION_DISPLAY = "1.26.30";
+
+	/**
 	 * PocketMine-MP-specific version ID for world data. Used to determine what fixes need to be applied to old world
 	 * data (e.g. stuff saved wrongly by past versions).
 	 * This version supplements the Minecraft vanilla world version.
