@@ -26,13 +26,14 @@ namespace pocketmine\network\mcpe\handler;
 use PHPUnit\Framework\TestCase;
 use pocketmine\network\mcpe\protocol\types\login\AuthenticationInfo;
 use pocketmine\network\mcpe\protocol\types\login\AuthenticationType;
+use pocketmine\network\mcpe\protocol\types\login\openid\SelfSignedJwtBody;
 use pocketmine\network\mcpe\protocol\types\login\openid\XboxAuthJwtBody;
 use pocketmine\network\mcpe\protocol\types\login\openid\XboxAuthJwtHeader;
-use pocketmine\network\mcpe\protocol\types\login\openid\SelfSignedJwtBody;
 use pocketmine\network\mcpe\ProtocolVersionChangelog;
 use pocketmine\network\PacketHandlingException;
 use Ramsey\Uuid\Uuid;
 use function chr;
+use function json_encode;
 use function md5;
 use function ord;
 
@@ -89,7 +90,7 @@ class LoginSequenceTest extends TestCase{
 	public function testParseAuthInfoFullAuthentication() : void{
 		$handler = self::makeExposingHandler();
 
-		$json = \json_encode([
+		$json = json_encode([
 			'AuthenticationType' => AuthenticationType::FULL->value,
 			'Token' => 'header.claims.sig',
 		]);
@@ -103,7 +104,7 @@ class LoginSequenceTest extends TestCase{
 	public function testParseAuthInfoSelfSignedAuthentication() : void{
 		$handler = self::makeExposingHandler();
 
-		$json = \json_encode([
+		$json = json_encode([
 			'AuthenticationType' => AuthenticationType::SELF_SIGNED->value,
 			'Token' => 'header.claims.sig',
 		]);
@@ -121,14 +122,14 @@ class LoginSequenceTest extends TestCase{
 	public function testParseAuthInfoNonObjectJsonThrows() : void{
 		$handler = self::makeExposingHandler();
 		$this->expectException(PacketHandlingException::class);
-		$handler->exposeParseAuthInfo(\json_encode([1, 2, 3])); // array, not object
+		$handler->exposeParseAuthInfo(json_encode([1, 2, 3])); // array, not object
 	}
 
 	public function testParseAuthInfoMissingFieldThrows() : void{
 		// JsonMapper with bExceptionOnMissingData=true will throw if a required field is absent.
 		$handler = self::makeExposingHandler();
 		$this->expectException(PacketHandlingException::class);
-		$handler->exposeParseAuthInfo(\json_encode(['AuthenticationType' => AuthenticationType::FULL->value])); // Token missing
+		$handler->exposeParseAuthInfo(json_encode(['AuthenticationType' => AuthenticationType::FULL->value])); // Token missing
 	}
 
 	// ── mapXboxTokenHeader ─────────────────────────────────────────────────────
@@ -136,9 +137,8 @@ class LoginSequenceTest extends TestCase{
 	public function testMapXboxTokenHeaderExtractsKid() : void{
 		$handler = self::makeExposingHandler();
 		$kid = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ==';
-		// The JWT header key-ID field is called "x5u" in the Bedrock auth JWT;
-		// XboxAuthJwtHeader maps it to the ->kid property used by processOpenIdLogin().
-		$header = $handler->exposeMapXboxTokenHeader(['x5u' => $kid]);
+		// OpenID authentication uses kid, alg and typ, unlike the legacy x5u header.
+		$header = $handler->exposeMapXboxTokenHeader(['kid' => $kid, 'alg' => 'RS256', 'typ' => 'JWT']);
 		self::assertSame($kid, $header->kid);
 	}
 
@@ -147,9 +147,13 @@ class LoginSequenceTest extends TestCase{
 	public function testMapXboxTokenBodyExtractsXuidAndName() : void{
 		$handler = self::makeExposingHandler();
 		$body = [
-			'xid'   => '2535448090751432',
+			'ipt' => 'Win10',
+			'pfcd' => '2026-10-18T00:00:00Z',
+			'tid' => 'test-title',
+			'mid' => 'test-minecraft-id',
+			'xid' => '2535448090751432',
 			'xname' => 'Steve',
-			'cpk'   => 'MFAKEPUBLICKEY==',
+			'cpk' => 'MFAKEPUBLICKEY==',
 		];
 		$result = $handler->exposeMapXboxTokenBody($body);
 		self::assertSame('2535448090751432', $result->xid);
@@ -163,8 +167,9 @@ class LoginSequenceTest extends TestCase{
 		$uuid = Uuid::uuid4()->toString();
 		$body = [
 			'leguuid' => $uuid,
-			'xname'   => 'Alex',
-			'cpk'     => 'MFAKEPUBLICKEY==',
+			'mid' => 'test-minecraft-id',
+			'xname' => 'Alex',
+			'cpk' => 'MFAKEPUBLICKEY==',
 		];
 		$result = $handler->exposeMapSelfSignedTokenBody($body);
 		self::assertSame($uuid, $result->leguuid);

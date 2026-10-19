@@ -22,6 +22,12 @@ The real evidence supports core modernization, dependency/protocol work, test-so
 
 The base banner remains 26.44 while the compatibility layer accepts protocol 2193. A real Bedrock 26.52 client joined and spawned. Full PHPUnit/PHPStan passes are not claimed.
 
+## Post-demo CI repair (October 18)
+
+The production assistant repaired Composer's mismatched manifest/lockfile by installing the committed protocol/data snapshots as mirrored path repositories. Only the protocol snapshot's package metadata was normalized; its PHP source remains the captured demo source. Docker now includes these paths in its build context. The upstream collaborator auto-approval job skips when the dispatch app ID is not configured.
+
+PHP-CS-Fixer 3.75 applied the ten formatting changes reported by CI. Three login-test fixtures were corrected to match the installed OpenID JWT models without relaxing validation. Local Windows PHP 8.4.16 PHPUnit results: 226 tests, 72,618 assertions, no failures/errors, 1 skipped, 28 deprecation notices. PHPStan still reports 116 findings. Remote checks remain authoritative for Linux/PHP-version coverage; no full green CI is claimed. Published MP4/PDF/deployment artifacts retain their original hashes and provenance.
+
 The runtime demo is local. The submission's demo link points to a runnable package and testing instructions, rather than claiming an internet-hosted server.
 
 ## Delivery

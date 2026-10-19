@@ -39,11 +39,11 @@ use function count;
 use function get_debug_type;
 use function hash;
 use function hexdec;
-use function ksort;
 use function is_array;
 use function is_int;
 use function is_string;
 use function json_decode;
+use function ksort;
 use function str_replace;
 use const JSON_THROW_ON_ERROR;
 

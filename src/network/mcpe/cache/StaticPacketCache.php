@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\cache;
 use pocketmine\color\Color;
 use pocketmine\data\bedrock\BedrockDataFiles;
 use pocketmine\data\SavedDataLoadingException;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\convert\BlockStateDictionary;
 use pocketmine\network\mcpe\convert\BlockStateDictionaryEntry;
 use pocketmine\network\mcpe\protocol\AvailableActorIdentifiersPacket;
@@ -35,7 +36,6 @@ use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
 use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionEntry;
 use pocketmine\network\mcpe\protocol\types\BlockPaletteEntry;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
@@ -44,13 +44,14 @@ use function base64_decode;
 use function count;
 use function get_debug_type;
 use function is_array;
+use function is_string;
 use function json_decode;
 
 class StaticPacketCache{
 	use SingletonTrait;
 
 	/**
-	 * @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag>
+	 * @phpstan-return CacheableNbt<CompoundTag>
 	 */
 	private static function loadCompoundFromFile(string $filePath) : CacheableNbt{
 		return new CacheableNbt((new NetworkNbtSerializer())->read(Filesystem::fileGetContents($filePath))->mustGetCompoundTag());
@@ -63,12 +64,12 @@ class StaticPacketCache{
 	 * We decode it and hand the raw bytes straight to CacheableNbt so they are
 	 * never re-serialised — the bytes are sent verbatim per-session.
 	 *
-	 * @phpstan-return CacheableNbt<\pocketmine\nbt\tag\CompoundTag>
+	 * @phpstan-return CacheableNbt<CompoundTag>
 	 */
 	private static function loadJigsawNbt() : CacheableNbt{
 		$path = \pocketmine\BEDROCK_DATA_PATH . '/jigsaw_structures-1.26.50.json';
 		$json = json_decode(Filesystem::fileGetContents($path), associative: true);
-		if(!is_array($json) || !isset($json['nbtB64']) || !\is_string($json['nbtB64'])){
+		if(!is_array($json) || !isset($json['nbtB64']) || !is_string($json['nbtB64'])){
 			throw new SavedDataLoadingException("$path must have a string 'nbtB64' key");
 		}
 		$raw = base64_decode($json['nbtB64'], strict: true);

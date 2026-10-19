@@ -104,8 +104,8 @@ final class SpyNetworkSession{
 		$this->disconnectedProtocol = $protocolVersion;
 	}
 
-	public function getLogger() : \Logger{
-		$logger = new class($this) extends \AttachableLogger{
+	public function getLogger() : Logger{
+		$logger = new class($this) extends AttachableLogger{
 			public function __construct(private SpyNetworkSession $session){}
 			public function debug($message, array $context = []) : void{
 				$this->session->logMessages[] = "[debug] $message";
@@ -147,7 +147,7 @@ $sessionA = new SpyNetworkSession();
 // We need to cast to NetworkSession for the handler constructor type-hint, but
 // since SessionStartPacketHandler only calls the three methods we've stubbed we
 // use a anonymous class that presents the same interface.
-$handlerSessionA = new class($sessionA) extends \stdClass{
+$handlerSessionA = new class($sessionA) extends stdClass{
 	public function __construct(private SpyNetworkSession $spy){}
 	public function __call(string $name, array $args) : mixed{
 		return $this->spy->$name(...$args);
@@ -179,7 +179,7 @@ assertCheck($sessionA->disconnectedProtocol === null, 'No disconnect called',   
 // ─── Phase B: Unsupported protocol rejection ──────────────────────────────────
 
 $sessionB = new SpyNetworkSession();
-$handlerSessionB = new class($sessionB) extends \stdClass{
+$handlerSessionB = new class($sessionB) extends stdClass{
 	public function __construct(private SpyNetworkSession $spy){}
 	public function __call(string $name, array $args) : mixed{
 		return $this->spy->$name(...$args);

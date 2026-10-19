@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b3db131151b6061d4f421de222987564",
+    "content-hash": "37e9c6a5abcd20f612312c25981e3b98",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -206,29 +206,19 @@
         {
             "name": "pocketmine/bedrock-data",
             "version": "6.7.0+bedrock-1.26.30",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/pmmp/BedrockData.git",
-                "reference": "bdb44a48fb6beffb6e9f6864f06d2232eb62b6a3"
-            },
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/BedrockData/zipball/bdb44a48fb6beffb6e9f6864f06d2232eb62b6a3",
-                "reference": "bdb44a48fb6beffb6e9f6864f06d2232eb62b6a3",
-                "shasum": ""
+                "type": "path",
+                "url": "demo-source-overrides/pocketmine/bedrock-data"
             },
             "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "CC0-1.0"
             ],
             "description": "Blobs of data generated from Minecraft: Bedrock Edition, used by PocketMine-MP",
-            "support": {
-                "issues": "https://github.com/pmmp/BedrockData/issues",
-                "source": "https://github.com/pmmp/BedrockData/tree/bedrock-1.26.30"
-            },
-            "abandoned": true,
-            "time": "2026-06-22T19:41:55+00:00"
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "pocketmine/bedrock-item-upgrade-schema",
@@ -259,17 +249,10 @@
         },
         {
             "name": "pocketmine/bedrock-protocol",
-            "version": "58.0.1+bedrock-1.26.30",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/pmmp/BedrockProtocol.git",
-                "reference": "8eb5a390a8d913ee54b97ac71f42899ecbb5c419"
-            },
+            "version": "59.0.0",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/BedrockProtocol/zipball/8eb5a390a8d913ee54b97ac71f42899ecbb5c419",
-                "reference": "8eb5a390a8d913ee54b97ac71f42899ecbb5c419",
-                "shasum": ""
+                "type": "path",
+                "url": "demo-source-overrides/pocketmine/bedrock-protocol"
             },
             "require": {
                 "ext-encoding": "~1.0.0",
@@ -280,6 +263,9 @@
                 "pocketmine/math": "^0.3.0 || ^0.4.0 || ^1.0.0",
                 "pocketmine/nbt": "^1.0.0",
                 "ramsey/uuid": "^4.1"
+            },
+            "replace": {
+                "nethergamesmc/bedrock-protocol": "*"
             },
             "require-dev": {
                 "phpstan/phpstan": "2.1.0",
@@ -293,17 +279,24 @@
                     "pocketmine\\network\\mcpe\\protocol\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "pocketmine\\network\\mcpe\\protocol\\": "tests/phpunit/"
+                }
+            },
+            "scripts": {
+                "update-create-methods": [
+                    "@php tools/generate-create-static-methods.php"
+                ]
+            },
             "license": [
                 "LGPL-3.0"
             ],
             "description": "An implementation of the Minecraft: Bedrock Edition protocol in PHP",
-            "support": {
-                "issues": "https://github.com/pmmp/BedrockProtocol/issues",
-                "source": "https://github.com/pmmp/BedrockProtocol/tree/58.0.1+bedrock-1.26.30"
-            },
-            "abandoned": true,
-            "time": "2026-07-05T17:46:09+00:00"
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
         },
         {
             "name": "pocketmine/binaryutils",

@@ -46,12 +46,18 @@ Type `stop` in the server console to stop cleanly.
 
 Branch: `modernize/phase1-dependency-bump`.
 Base commit: `326fb018aeb9aea6a4def2232a4269ca70bf0edc`, plus the local working-tree changes committed in this submission.
-`demo-source-overrides/pocketmine/` preserves the exact local BedrockProtocol and BedrockData used in the build.
-Install Composer dependencies, copy those overrides over the corresponding `vendor/pocketmine/` folders, regenerate the authoritative autoloader, then run:
+`demo-source-overrides/pocketmine/` preserves the local BedrockProtocol and BedrockData used in the build.
+Composer installs these checked-in snapshots as mirrored path packages, so no manual vendor overwrite or moving upstream branch is needed. Protocol package metadata uses the `pocketmine/bedrock-protocol` name expected by the server; its PHP sources are unchanged from the demo snapshot. Version `59.0.0` identifies this local snapshot, not an upstream release.
+With PocketMine's PHP CLI and extensions available, install the locked dependencies and build:
 
 ```powershell
-.\bin\php\php.exe '-dphar.readonly=0' build\server-phar.php --git=<actual-git-state>
+composer install --no-dev --classmap-authoritative --prefer-dist
+php '-dphar.readonly=0' build\server-phar.php --git=<actual-git-state>
 ```
+
+For development, use `composer install` including dev dependencies, then run `vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning tests/phpunit` and `vendor/bin/phpstan analyze --no-progress --memory-limit=2G`. The CI workflow runs these checks across PHP 8.2–8.5; a successful dependency install alone does not establish a passing test suite.
+
+Post-demo CI repair on October 18: a fresh locked install succeeded on Windows PHP 8.4.16, and PHPUnit completed with 226 tests / 72,618 assertions, no failures or errors, one skipped test and 28 deprecation notices. Three login fixtures were corrected to the installed OpenID models' required fields. PHPStan still reports 116 findings; a full green CI is not claimed. These repairs do not change the already-recorded deployment or video.
 
 The downloadable PHAR was built tonight before this submission commit. Its metadata retains `326fb018a...-dirty` to identify that working-tree origin.
 The originally referenced `pocketmine-deploy_0_3e8d-fixed.zip` was unavailable on the machine. The demo uses the newly built local package, with SHA-256 recorded in `submission/build-provenance.json`.
@@ -65,7 +71,7 @@ The originally referenced `pocketmine-deploy_0_3e8d-fixed.zip` was unavailable o
 
 ## Next steps
 
-Reproduce the build from pinned clean dependencies, run the full automated test suite, finish broader protocol coverage, add plugins, and deploy a secured public server.
+Run the full automated test suite, finish broader protocol coverage, add plugins, and deploy a secured public server.
 
 ## Attribution
 

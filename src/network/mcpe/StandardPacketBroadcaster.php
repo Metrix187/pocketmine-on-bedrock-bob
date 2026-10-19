@@ -29,6 +29,7 @@ use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
 use function count;
+use function explode;
 use function log;
 use function spl_object_id;
 use function strlen;
@@ -67,7 +68,7 @@ final class StandardPacketBroadcaster implements PacketBroadcaster{
 
 		foreach($targetsByGroup as $groupKey => $groupTargets){
 			// Derive compressorId and protocolId from the group key.
-			[$compressorId, $protocolId] = \explode(':', $groupKey, 2);
+			[$compressorId, $protocolId] = explode(':', $groupKey, 2);
 			$compressorId = (int) $compressorId;
 			$protocolId = (int) $protocolId;
 			$compressor = $compressors[$compressorId];

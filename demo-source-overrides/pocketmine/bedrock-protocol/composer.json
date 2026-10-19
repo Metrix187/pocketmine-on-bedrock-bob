@@ -1,8 +1,7 @@
 {
-    "name": "vapebw/bedrock-protocol",
+    "name": "pocketmine/bedrock-protocol",
     "replace": {
-        "nethergamesmc/bedrock-protocol": "*",
-        "pocketmine/bedrock-protocol": "*"
+        "nethergamesmc/bedrock-protocol": "*"
     },
     "description": "An implementation of the Minecraft: Bedrock Edition protocol in PHP",
     "type": "library",

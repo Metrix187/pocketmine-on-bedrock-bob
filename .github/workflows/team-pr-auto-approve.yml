@@ -17,7 +17,8 @@ jobs:
   dispatch:
     name: Request approval
     runs-on: ubuntu-latest
-    if: '! github.event.pull_request.draft'
+    # This dispatch belongs to upstream's configured GitHub App, not unconfigured forks.
+    if: ${{ !github.event.pull_request.draft && vars.RESTRICTED_ACTIONS_DISPATCH_ID != '' }}
 
     steps:
       - name: Generate access token

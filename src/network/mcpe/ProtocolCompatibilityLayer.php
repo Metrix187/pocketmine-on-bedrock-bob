@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe;
 
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use function implode;
+use function in_array;
+use function sprintf;
 
 /**
  * ProtocolCompatibilityLayer provides a single place to reason about which client
@@ -112,7 +115,7 @@ final class ProtocolCompatibilityLayer{
 		if($protocolVersion === self::CURRENT_PROTOCOL){
 			return true;
 		}
-		return \in_array($protocolVersion, self::SUPPORTED_PROTOCOLS, true);
+		return in_array($protocolVersion, self::SUPPORTED_PROTOCOLS, true);
 	}
 
 	/**
@@ -120,12 +123,12 @@ final class ProtocolCompatibilityLayer{
 	 * connects with an unsupported protocol version.
 	 */
 	public static function describeProtocolMismatch(int $clientProtocol) : string{
-		return \sprintf(
+		return sprintf(
 			"Client protocol %d is not supported (server supports %d%s)",
 			$clientProtocol,
 			self::CURRENT_PROTOCOL,
 			self::SUPPORTED_PROTOCOLS !== []
-				? ", also accepts: " . \implode(", ", self::SUPPORTED_PROTOCOLS)
+				? ", also accepts: " . implode(", ", self::SUPPORTED_PROTOCOLS)
 				: ""
 		);
 	}

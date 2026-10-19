@@ -25,6 +25,7 @@ COPY ./resources /opt/pocketmine/repo/resources
 COPY ./src /opt/pocketmine/repo/src
 COPY ./generated /opt/pocketmine/repo/generated
 COPY ./composer.json ./composer.lock /opt/pocketmine/repo/
+COPY ./demo-source-overrides /opt/pocketmine/repo/demo-source-overrides
 
 WORKDIR /opt/pocketmine/repo
 RUN composer install --classmap-authoritative --no-dev --prefer-dist
