@@ -1,118 +1,68 @@
-# PocketMine-MP — Modernization Fork
+# PocketMine-on-Bedrock
 
-> **Hackathon Branch:** `modernize/phase1-dependency-bump`
-> **Current Bedrock Protocol:** `858` (Minecraft Bedrock 1.26.30)
-> **PHP Floor:** 8.2+
->
-> This fork revives the archived PocketMine-MP codebase.
-> Protocol history and upgrade checklist: [`src/network/mcpe/ProtocolVersionChangelog.php`](src/network/mcpe/ProtocolVersionChangelog.php)
-> Full modernization record: [`MODERNIZATION.md`](MODERNIZATION.md)
+Built with IBM Bob for **Building with IBM Bob**, Theme 2: Modernize What Matters.
+Solo creator: **skyuu72**, team **quantara.cv**, GitHub **Metrix187**.
 
----
+**Bob was the dev loop, not a bolted-on code generator.**
+Real session excerpts and the inherited `[Bob-*]` commit history show the process.
 
-# End of support announcement (original upstream message)
+## What changed during the hackathon
 
-Hello all,
+This extends the existing PocketMine-MP server. The work does not claim ownership of upstream PocketMine or Amber-PM libraries.
+Work shown here took place during September 28 - October 18, 2026.
 
-As some of you may know, @driesboy recently decided to leave Minecraft behind as he pursues other interests. While I wish him the best, unfortunately, this now means that no one is left on the team willing to do updates for new Minecraft versions.
+- PHP floor raised from 8.1 to 8.2, dependency constraints updated, and null-safety/readonly refactors committed with Bob.
+- Protocol compatibility checks, an audit changelog, and packet-handler documentation added.
+- Login, handshake, and compatibility test sources added by Bob. Full PHPUnit/PHPStan results are **not** claimed for tonight's build.
+- Local Bedrock protocol integration and pre-spawn packet handling updated.
+- Human-provided 26.52 fixes address jigsaw packet ordering and hashed block IDs. Bob applied/reviewed these and drove the live retry loop. See `docs/bob-sessions/04-session-excerpt.md`.
+- Tonight's video-production session regenerated the export's Composer autoloader and built the PHAR from the local working tree. These packaging steps were performed by the production assistant, not attributed to Bob.
 
-We've assembled some [documentation](https://doc.pmmp.io/en/rtfd/developers/internals-docs/updating-minecraft-protocol.html) on the update process to help anyone who wants to make a fork to continue updating PM themselves. However, no further updates will be provided by the PMMP team.
+## Run the verified demo
 
-I want to say a huge thank you for the outstanding support of the Lifeboat Network for supporting the development of the project financially these last few years.
-While they could've hired us to go closed-source and kept everything for themselves, they instead agreed to let us share the work we were doing with the public community with no strings attached, and didn't even ask for any recognition in return. Their generosity has allowed many servers to flourish over the last few years.
+Download **pocketmine-bob-local-build.zip** from this repository's demo release.
+Extract the entire ZIP on Windows x64. It includes PHP CLI 8.4.16 and required extensions.
+Open PowerShell in that folder and run:
 
-A huge thank you is also owed to the members of the PMMP team, past and present, including developers, community moderators, and code reviewers. It has taken a huge amount of unpaid voluntary work by many people to keep this project going for so long, work that has often been taken for granted by the community.
+```powershell
+.\start.ps1 -extraPocketMineArgs "--no-wizard --disable-ansi"
+```
 
-I would also like to thank those who have supported me on Patreon, however small the amount. You guys have been truly generous, by paying to support a project that you didn't have to, for almost nothing in return except a fancy Discord role.
+Wait for **Done**. On this PC, join **127.0.0.1**, UDP **19132**, using **Minecraft Bedrock 26.52**.
+The installed Windows client used tonight is `1.26.5203.0`. The compatibility layer accepts protocol **2193**.
+The server's base startup banner and default advertisement still say **26.44**. The client actually joined and spawned in-world.
+No custom plugins ship in this demo. This project modernizes the server core.
 
-Finally, thank you to you, the community, for using PocketMine-MP and making cool things with it, reporting bugs, making pull requests, and trying to make the world a better place.
+The demonstration is **local**. Public internet access is not verified. To test on a judge's machine, run the deploy package there and join localhost.
+The supplied local-demo configuration disables Xbox-auth enforcement. It is not a public-hosting configuration.
+Type `stop` in the server console to stop cleanly.
 
-Peace out,
-Dylan / dktapps / the black cat
+## Source and build
 
----
+Branch: `modernize/phase1-dependency-bump`.
+Base commit: `326fb018aeb9aea6a4def2232a4269ca70bf0edc`, plus the local working-tree changes committed in this submission.
+`demo-source-overrides/pocketmine/` preserves the exact local BedrockProtocol and BedrockData used in the build.
+Install Composer dependencies, copy those overrides over the corresponding `vendor/pocketmine/` folders, regenerate the authoritative autoloader, then run:
 
-<p align="center">
-	<a href="https://pmmp.io">
-		<!--[if IE]>
-			<img src="https://github.com/pmmp/PocketMine-MP/blob/stable/.github/readme/pocketmine.png" alt="The PocketMine-MP logo" title="PocketMine" loading="eager" />
-		<![endif]-->
-		<picture>
-			<source srcset="https://raw.githubusercontent.com/pmmp/PocketMine-MP/stable/.github/readme/pocketmine-dark-rgb.gif" media="(prefers-color-scheme: dark)">
-			<img src="https://raw.githubusercontent.com/pmmp/PocketMine-MP/stable/.github/readme/pocketmine-rgb.gif" loading="eager" />
-		</picture>
-	</a><br>
-	<b>A highly customisable, open source server software for Minecraft: Bedrock Edition written in PHP</b>
-</p>
+```powershell
+.\bin\php\php.exe '-dphar.readonly=0' build\server-phar.php --git=<actual-git-state>
+```
 
-<p align="center">
-	<a href="https://github.com/pmmp/PocketMine-MP/actions/workflows/main.yml"><img src="https://github.com/pmmp/PocketMine-MP/actions/workflows/main.yml/badge.svg" alt="CI" /></a>
-	<a href="https://github.com/pmmp/PocketMine-MP/releases/latest"><img alt="GitHub release (latest SemVer)" src="https://img.shields.io/github/v/release/pmmp/PocketMine-MP?label=release&sort=semver"></a>
-	<a href="https://discord.gg/bmSAZBG"><img src="https://img.shields.io/discord/373199722573201408?label=discord&color=7289DA&logo=discord" alt="Discord" /></a>
-	<br>
-	<a href="https://github.com/pmmp/PocketMine-MP/releases"><img alt="GitHub all releases" src="https://img.shields.io/github/downloads/pmmp/PocketMine-MP/total?label=downloads%40total"></a>
-	<a href="https://github.com/pmmp/PocketMine-MP/releases/latest"><img alt="GitHub release (latest by SemVer)" src="https://img.shields.io/github/downloads/pmmp/PocketMine-MP/latest/total?sort=semver"></a>
-</p>
+The downloadable PHAR was built tonight before this submission commit. Its metadata retains `326fb018a...-dirty` to identify that working-tree origin.
+The originally referenced `pocketmine-deploy_0_3e8d-fixed.zip` was unavailable on the machine. The demo uses the newly built local package, with SHA-256 recorded in `submission/build-provenance.json`.
 
-## What is this?
-PocketMine-MP is a highly customisable server software for Minecraft: Bedrock Edition, built from scratch in PHP, with over 10 years of history.
+## Evidence and artifacts
 
-If you're looking to create a Minecraft: Bedrock server with **custom functionality**, look no further.
+- `docs/bob-sessions/`: five real Bob message excerpts with source IDs and timestamps.
+- `MODERNIZATION.md`: historical implementation notes. Earlier version references there describe earlier phases.
+- `submission/`: pitch deck and submission text.
+- Demo release: MP4 and runnable Windows deployment ZIP.
 
-- 🧩 **Powerful plugin API** - extend and customise gameplay as you see fit
-- 🗺️ **Rich ecosystem** and **large developer community** - find plugins easily and learn to develop your own
-- 🌐 **Multi-world support** - offer a more varied game experience to players without transferring them to other server nodes
-- 🏎️ **Performance** - get 100+ players onto one server (depending on hardware and plugins)
-- ⤴️ **Continuously updated** - new Minecraft versions are usually supported within days
+## Next steps
 
-## :x: PocketMine-MP is NOT a vanilla Minecraft server software.
-**It is poorly suited to hosting vanilla survival servers.**
-It doesn't have many features from the vanilla game, such as vanilla world generation, redstone, mob AI, and various other things.
+Reproduce the build from pinned clean dependencies, run the full automated test suite, finish broader protocol coverage, add plugins, and deploy a secured public server.
 
-If you just want to play **vanilla survival multiplayer**, consider using the [official Minecraft: Bedrock server software](https://minecraft.net/download/server/bedrock) instead of PocketMine-MP.
+## Attribution
 
-If that's not an option for you, you may be able to add some of PocketMine-MP's missing features using plugins from [Poggit](https://poggit.pmmp.io/plugins), or write plugins to implement them yourself.
-
-## Getting Started
-- [Documentation](http://pmmp.readthedocs.org/)
-- [Installation instructions](https://pmmp.readthedocs.io/en/rtfd/installation.html)
-- [Docker image](https://github.com/pmmp/PocketMine-MP/pkgs/container/pocketmine-mp)
-- [Plugin repository](https://poggit.pmmp.io/plugins)
-
-## Community & Support
-Join our [Discord](https://discord.gg/bmSAZBG) server to chat with other users and developers.
-
-You can also post questions on [StackOverflow](https://stackoverflow.com/tags/pocketmine) under the tag `pocketmine`.
-
-## Developing Plugins
-If you want to write your own plugins, the following resources may be useful.
-Don't forget you can always ask our community if you need help.
-
- * [Developer documentation](https://devdoc.pmmp.io) - General documentation for PocketMine-MP plugin developers
- * [Latest release API documentation](https://apidoc.pmmp.io) - Doxygen API documentation generated for each release
- * [Latest bleeding-edge API documentation](https://apidoc-dev.pmmp.io) - Doxygen API documentation generated weekly from `major-next` branch
- * [DevTools](https://github.com/pmmp/DevTools/) - Development tools plugin for creating plugins
- * [ExamplePlugin](https://github.com/pmmp/ExamplePlugin/) - Example plugin demonstrating some basic API features
-
-## Contributing to PocketMine-MP
-PocketMine-MP accepts community contributions! The following resources will be useful if you want to contribute to PocketMine-MP.
- * [Building and running PocketMine-MP from source](BUILDING.md)
- * [Contributing Guidelines](CONTRIBUTING.md)
-
-New here? Check out [issues with the "Easy task" label](https://github.com/pmmp/PocketMine-MP/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22Easy%20task%22) for things you could work to familiarise yourself with the codebase.
-
-## Donate
-PocketMine-MP is free, but it requires a lot of time and effort from unpaid volunteers to develop. Donations enable us to keep delivering support for new versions and adding features your players love.
-
-You can support development using the following methods:
-
-- [Patreon](https://www.patreon.com/pocketminemp)
-- Bitcoin (BTC): `bc1q2v5ngyf8ugyd55kqa9ep35g2rv342ueqm6ks33`
-- Stellar Lumens (XLM): `GAAC5WZ33HCTE3BFJFZJXONMEIBNHFLBXM2HJVAZHXXPYA3HP5XPPS7T`
-
-Thanks for your support!
-
-## Licensing information
-This project is licensed under LGPL-3.0. Please see the [LICENSE](/LICENSE) file for details.
-
-pmmp/PocketMine are not affiliated with Mojang. All brands and trademarks belong to their respective owners. PocketMine-MP is not a Mojang-approved software, nor is it associated with Mojang.
+PocketMine-MP is LGPL-3.0 licensed. Existing upstream history and license are preserved.
+Amber-PM BedrockProtocol and BedrockData are included as the local dependency sources used for the demo. Their licenses remain in their folders.

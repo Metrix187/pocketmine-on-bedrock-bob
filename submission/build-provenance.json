@@ -1,0 +1,12 @@
+{
+  "original_fixed_zip_found": false,
+  "base_commit": "326fb018aeb9aea6a4def2232a4269ca70bf0edc",
+  "working_tree_build": true,
+  "packaging_performed_by": "video production assistant",
+  "package_sha256": "bbcf212904187b8003b585cf4301cd4f55cf9967a2ed8a408c194072a4ecad65",
+  "phar_sha256": "4c3b51e19c3e2369e51f295ec229360fd986b74baaa5cbd595b1bbc166d47085",
+  "client_version": "1.26.5203.0",
+  "accepted_protocol": 2193,
+  "port": 19132,
+  "public_reachability_verified": false
+}

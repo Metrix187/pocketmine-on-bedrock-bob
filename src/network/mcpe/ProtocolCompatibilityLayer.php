@@ -83,7 +83,25 @@ final class ProtocolCompatibilityLayer{
 	 * @var int[]
 	 * @phpstan-var list<int>
 	 */
-	public const SUPPORTED_PROTOCOLS = [];
+	/**
+	 * Protocols accepted in addition to CURRENT_PROTOCOL.
+	 *
+	 * 26.50 shipped as protocol 2192 (CloudburstMC codec / preview builds).
+	 * 26.51 / 26.52 hotfix shipped as protocol 2193.
+	 *
+	 * These versions differ from 26.44 (protocol 2169) in:
+	 *   - Block network IDs: 2192+ uses hashed IDs, 2169 uses numeric runtime IDs
+	 *   - bedrock-data: canonical_block_states, required_item_list, block_state_meta_map
+	 *     must be the 1.26.50-versioned files
+	 *   - JigsawStructureDataPacket: real NBT from jigsaw_structures-1.26.50.json required
+	 *
+	 * Per-protocol chunk encoding is handled in ChunkCache (keyed by protocolId),
+	 * and broadcast encoding is grouped by (compressor, protocolId) in StandardPacketBroadcaster.
+	 */
+	public const SUPPORTED_PROTOCOLS = [
+		2192, // Bedrock 26.50
+		2193, // Bedrock 26.51 / 26.52 hotfix
+	];
 
 	/**
 	 * Returns true if the given client protocol version is one this server can handle.

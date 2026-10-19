@@ -37,7 +37,7 @@
       "pocketmine/bedrock-block-upgrade-schema": "~5.3.0",
       "pocketmine/bedrock-data": "~6.7.0+bedrock-1.26.30",
       "pocketmine/bedrock-item-upgrade-schema": "~1.18.0",
-      "pocketmine/bedrock-protocol": "~58.0.1+bedrock-1.26.30",
+      "pocketmine/bedrock-protocol": "dev-main as 59.0.0",
       "pocketmine/binaryutils": "^0.2.1",
       "pocketmine/callback-validator": "~1.0.4",
       "pocketmine/color": "^0.3.0",
@@ -78,6 +78,12 @@
          "pocketmine\\phpstan\\rules\\": "tests/phpstan/rules"
       }
    },
+   "repositories": [
+      {
+         "type": "vcs",
+         "url": "https://github.com/Amber-PM/BedrockProtocol"
+      }
+   ],
    "config": {
       "platform": {
          "php": "8.2.0"

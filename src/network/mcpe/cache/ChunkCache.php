@@ -27,6 +27,7 @@ use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\ChunkRequestTask;
 use pocketmine\network\mcpe\compression\CompressBatchPromise;
 use pocketmine\network\mcpe\compression\Compressor;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\ChunkListenerNoOpTrait;
@@ -69,9 +70,16 @@ class ChunkCache implements ChunkListener{
 	public static function pruneCaches() : void{
 		foreach(self::$instances as $compressorMap){
 			foreach($compressorMap as $chunkCache){
-				foreach($chunkCache->caches as $chunkHash => $promise){
-					if(is_string($promise)){
-						//Do not clear promises that are not yet fulfilled; they will have requesters waiting on them
+				foreach($chunkCache->caches as $chunkHash => $protocolCaches){
+					$allResolved = true;
+					foreach($protocolCaches as $protocolId => $promise){
+						if(is_string($promise)){
+							unset($chunkCache->caches[$chunkHash][$protocolId]);
+						}else{
+							$allResolved = false;
+						}
+					}
+					if($allResolved){
 						unset($chunkCache->caches[$chunkHash]);
 					}
 				}
@@ -80,8 +88,9 @@ class ChunkCache implements ChunkListener{
 	}
 
 	/**
-	 * @var CompressBatchPromise[]|string[]
-	 * @phpstan-var array<int, CompressBatchPromise|string>
+	 * Per-protocol chunk cache: [chunkHash][protocolId] => CompressBatchPromise|string(compressed bytes)
+	 * Keyed by protocol so that sessions on different Bedrock versions get correctly-encoded chunks.
+	 * @phpstan-var array<int, array<int, CompressBatchPromise|string>>
 	 */
 	private array $caches = [];
 
@@ -97,7 +106,7 @@ class ChunkCache implements ChunkListener{
 		private int $dimensionId = DimensionIds::OVERWORLD
 	){}
 
-	private function prepareChunkAsync(int $chunkX, int $chunkZ, int $chunkHash) : CompressBatchPromise{
+	private function prepareChunkAsync(int $chunkX, int $chunkZ, int $chunkHash, int $protocolId) : CompressBatchPromise{
 		$this->world->registerChunkListener($this, $chunkX, $chunkZ);
 		$chunk = $this->world->getChunk($chunkX, $chunkZ);
 		if($chunk === null){
@@ -116,14 +125,15 @@ class ChunkCache implements ChunkListener{
 					$this->dimensionId,
 					$chunk,
 					$promise,
-					$this->compressor
+					$this->compressor,
+					$protocolId
 				)
 			);
-			$this->caches[$chunkHash] = $promise;
-			$promise->onResolve(function(CompressBatchPromise $promise) use ($chunkHash) : void{
+			$this->caches[$chunkHash][$protocolId] = $promise;
+			$promise->onResolve(function(CompressBatchPromise $promise) use ($chunkHash, $protocolId) : void{
 				//the promise may have been discarded or replaced if the chunk was unloaded or modified in the meantime
-				if(($this->caches[$chunkHash] ?? null) === $promise){
-					$this->caches[$chunkHash] = $promise->getResult();
+				if(($this->caches[$chunkHash][$protocolId] ?? null) === $promise){
+					$this->caches[$chunkHash][$protocolId] = $promise->getResult();
 				}
 			});
 
@@ -134,18 +144,18 @@ class ChunkCache implements ChunkListener{
 	}
 
 	/**
-	 * Requests asynchronous preparation of the chunk at the given coordinates.
+	 * Requests asynchronous preparation of the chunk at the given coordinates for the given protocol version.
 	 *
 	 * @return CompressBatchPromise|string Compressed chunk packet, or a promise for one to be resolved asynchronously.
 	 */
-	public function request(int $chunkX, int $chunkZ) : CompressBatchPromise|string{
+	public function request(int $chunkX, int $chunkZ, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : CompressBatchPromise|string{
 		$chunkHash = World::chunkHash($chunkX, $chunkZ);
-		if(isset($this->caches[$chunkHash])){
+		if(isset($this->caches[$chunkHash][$protocolId])){
 			++$this->hits;
-			return $this->caches[$chunkHash];
+			return $this->caches[$chunkHash][$protocolId];
 		}
 
-		return $this->prepareChunkAsync($chunkX, $chunkZ, $chunkHash);
+		return $this->prepareChunkAsync($chunkX, $chunkZ, $chunkHash, $protocolId);
 	}
 
 	private function destroy(int $chunkX, int $chunkZ) : bool{
@@ -161,17 +171,16 @@ class ChunkCache implements ChunkListener{
 	 */
 	private function destroyOrRestart(int $chunkX, int $chunkZ) : void{
 		$chunkPosHash = World::chunkHash($chunkX, $chunkZ);
-		$cache = $this->caches[$chunkPosHash] ?? null;
-		if($cache !== null){
-			if(!is_string($cache)){
-				//some requesters are waiting for this chunk, so their request needs to be fulfilled
-				$cache->cancel();
-				unset($this->caches[$chunkPosHash]);
-
-				$this->prepareChunkAsync($chunkX, $chunkZ, $chunkPosHash)->onResolve(...$cache->getResolveCallbacks());
-			}else{
-				//dump the cache, it'll be regenerated the next time it's requested
-				$this->destroy($chunkX, $chunkZ);
+		$protocolCaches = $this->caches[$chunkPosHash] ?? null;
+		if($protocolCaches !== null){
+			unset($this->caches[$chunkPosHash]);
+			foreach($protocolCaches as $protocolId => $cache){
+				if(!is_string($cache)){
+					//some requesters are waiting for this chunk, so their request needs to be fulfilled
+					$cache->cancel();
+					$this->prepareChunkAsync($chunkX, $chunkZ, $chunkPosHash, $protocolId)->onResolve(...$cache->getResolveCallbacks());
+				}
+				//string entries: dump the cache, it'll be regenerated the next time it's requested
 			}
 		}
 	}
@@ -213,9 +222,11 @@ class ChunkCache implements ChunkListener{
 	 */
 	public function calculateCacheSize() : int{
 		$result = 0;
-		foreach($this->caches as $cache){
-			if(is_string($cache)){
-				$result += strlen($cache);
+		foreach($this->caches as $protocolCaches){
+			foreach($protocolCaches as $cache){
+				if(is_string($cache)){
+					$result += strlen($cache);
+				}
 			}
 		}
 		return $result;

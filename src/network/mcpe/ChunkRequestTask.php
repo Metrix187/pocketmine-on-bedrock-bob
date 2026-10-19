@@ -49,11 +49,12 @@ class ChunkRequestTask extends AsyncTask{
 	/** @phpstan-var NonThreadSafeValue<Compressor> */
 	protected NonThreadSafeValue $compressor;
 	private string $tiles;
+	private int $protocolId;
 
 	/**
 	 * @phpstan-param DimensionIds::* $dimensionId
 	 */
-	public function __construct(int $chunkX, int $chunkZ, int $dimensionId, Chunk $chunk, CompressBatchPromise $promise, Compressor $compressor){
+	public function __construct(int $chunkX, int $chunkZ, int $dimensionId, Chunk $chunk, CompressBatchPromise $promise, Compressor $compressor, int $protocolId){
 		$this->compressor = new NonThreadSafeValue($compressor);
 
 		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
@@ -61,6 +62,7 @@ class ChunkRequestTask extends AsyncTask{
 		$this->chunkZ = $chunkZ;
 		$this->dimensionId = $dimensionId;
 		$this->tiles = ChunkSerializer::serializeTiles($chunk);
+		$this->protocolId = $protocolId;
 
 		$this->storeLocal(self::TLS_KEY_PROMISE, $promise);
 	}
@@ -74,7 +76,7 @@ class ChunkRequestTask extends AsyncTask{
 		$payload = ChunkSerializer::serializeFullChunk($chunk, $dimensionId, $converter->getBlockTranslator(), $this->tiles);
 
 		$stream = new ByteBufferWriter();
-		PacketBatch::encodePackets($stream, [LevelChunkPacket::create(new ChunkPosition($this->chunkX, $this->chunkZ), $dimensionId, $subCount, false, null, $payload)]);
+		PacketBatch::encodePackets($stream, $this->protocolId, [LevelChunkPacket::create(new ChunkPosition($this->chunkX, $this->chunkZ), $dimensionId, $subCount, null, false, [], $payload)]);
 
 		$compressor = $this->compressor->deserialize();
 		$this->setResult(chr($compressor->getNetworkId()) . $compressor->compress($stream->getData()));

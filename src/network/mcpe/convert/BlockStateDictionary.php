@@ -25,18 +25,26 @@ namespace pocketmine\network\mcpe\convert;
 
 use pocketmine\data\bedrock\block\BlockStateData;
 use pocketmine\data\bedrock\block\BlockTypeNames;
+use pocketmine\nbt\LittleEndianNbtSerializer;
 use pocketmine\nbt\NbtDataException;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
 use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
+use pocketmine\utils\AssumptionFailedError;
+use pocketmine\utils\Binary;
 use pocketmine\utils\Utils;
 use function array_key_first;
 use function array_map;
 use function count;
 use function get_debug_type;
+use function hash;
+use function hexdec;
+use function ksort;
 use function is_array;
 use function is_int;
 use function is_string;
 use function json_decode;
+use function str_replace;
 use const JSON_THROW_ON_ERROR;
 
 /**
@@ -117,11 +125,48 @@ final class BlockStateDictionary{
 		$name = $data->getName();
 
 		$lookup = $this->stateDataToStateIdLookup[$name] ?? null;
-		return match(true){
-			$lookup === null => null,
-			is_int($lookup) => $lookup,
-			is_array($lookup) => $lookup[BlockStateDictionaryEntry::encodeStateProperties($data->getStates())] ?? null
-		};
+		if(is_array($lookup)){
+			$encoded = BlockStateDictionaryEntry::encodeStateProperties($data->getStates());
+			return $lookup[$encoded] ?? ($this->closestStateCache[$name][$encoded] ??= $this->findClosestState($lookup, $data));
+		}
+		return $lookup;
+	}
+
+	/**
+	 * @var int[][]
+	 * @phpstan-var array<string, array<string, int>>
+	 */
+	private array $closestStateCache = [];
+
+	/**
+	 * Fallback for blockstates whose properties don't exactly match any palette entry (e.g. the server's
+	 * serializer emits an older state layout than the palette's version). Picks the entry for the same block
+	 * that shares the most property values, ignoring "minecraft:" key prefixes; ties go to the lowest ID.
+	 *
+	 * @param int[] $candidates
+	 * @phpstan-param array<string, int> $candidates
+	 */
+	private function findClosestState(array $candidates, BlockStateData $data) : int{
+		$wanted = [];
+		foreach(Utils::stringifyKeys($data->getStates()) as $key => $tag){
+			$wanted[str_replace("minecraft:", "", $key)] = $tag;
+		}
+		$bestId = null;
+		$bestScore = -1;
+		foreach($candidates as $stateId){
+			$score = 0;
+			foreach(Utils::stringifyKeys(BlockStateDictionaryEntry::decodeStateProperties($this->states[$stateId]->getRawStateProperties())) as $key => $tag){
+				$want = $wanted[str_replace("minecraft:", "", $key)] ?? null;
+				if($want !== null && $want->equals($tag)){
+					$score++;
+				}
+			}
+			if($score > $bestScore || ($score === $bestScore && $stateId < $bestId)){
+				$bestScore = $score;
+				$bestId = $stateId;
+			}
+		}
+		return $bestId ?? throw new AssumptionFailedError("Candidate list should never be empty");
 	}
 
 	/**
@@ -165,7 +210,28 @@ final class BlockStateDictionary{
 		);
 	}
 
-	public static function loadFromString(string $blockPaletteContents, string $metaMapContents) : self{
+	/**
+	 * Network ID of a blockstate as 1.26.50+ clients compute it when StartGamePacket::$blockNetworkIdsAreHashes is
+	 * set: FNV-1a 32 over the little-endian NBT of {"name": ..., "states": {...}} (states sorted by key), as a
+	 * signed int.
+	 */
+	public static function computeNetworkHash(BlockStateData $state) : int{
+		$states = $state->getStates();
+		ksort($states);
+		$sorted = CompoundTag::create();
+		foreach(Utils::stringifyKeys($states) as $name => $value){
+			$sorted->setTag($name, $value);
+		}
+		$bytes = (new LittleEndianNbtSerializer())->write(new TreeRoot(CompoundTag::create()
+			->setString("name", $state->getName())
+			->setTag("states", $sorted)));
+		return Binary::signInt((int) hexdec(hash("fnv1a32", $bytes)));
+	}
+
+	/**
+	 * @param bool $hashedNetworkIds if true, states are keyed by computeNetworkHash() instead of their palette index
+	 */
+	public static function loadFromString(string $blockPaletteContents, string $metaMapContents, bool $hashedNetworkIds = false) : self{
 		$metaMap = json_decode($metaMapContents, flags: JSON_THROW_ON_ERROR);
 		if(!is_array($metaMap)){
 			throw new \InvalidArgumentException("Invalid metaMap, expected array for root type, got " . get_debug_type($metaMap));
@@ -192,7 +258,11 @@ final class BlockStateDictionary{
 				throw new \InvalidArgumentException("Invalid metaMap offset $i, expected int, got " . get_debug_type($meta));
 			}
 			$uniqueName = $uniqueNames[$state->getName()] ??= $state->getName();
-			$entries[$i] = new BlockStateDictionaryEntry($uniqueName, $state->getStates(), $meta);
+			$networkId = $hashedNetworkIds ? self::computeNetworkHash($state) : $i;
+			if(isset($entries[$networkId])){
+				throw new \InvalidArgumentException("Duplicate network ID $networkId for state $i (" . $state->toNbt() . ")");
+			}
+			$entries[$networkId] = new BlockStateDictionaryEntry($uniqueName, $state->getStates(), $meta);
 		}
 
 		return new self($entries);

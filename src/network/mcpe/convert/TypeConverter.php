@@ -86,7 +86,8 @@ class TypeConverter{
 		$canonicalBlockStatesRaw = Filesystem::fileGetContents(BedrockDataFiles::CANONICAL_BLOCK_STATES_NBT);
 		$metaMappingRaw = Filesystem::fileGetContents(BedrockDataFiles::BLOCK_STATE_META_MAP_JSON);
 		$this->blockTranslator = new BlockTranslator(
-			BlockStateDictionary::loadFromString($canonicalBlockStatesRaw, $metaMappingRaw),
+			//26.50+ clients don't share the canonical palette's index order, so block IDs are sent as hashes
+			BlockStateDictionary::loadFromString($canonicalBlockStatesRaw, $metaMappingRaw, hashedNetworkIds: true),
 			GlobalBlockStateHandlers::getSerializer()
 		);
 
@@ -147,9 +148,8 @@ class TypeConverter{
 			return new ProtocolRecipeIngredient(null, 0);
 		}
 		if($ingredient instanceof MetaWildcardRecipeIngredient){
-			$id = $this->itemTypeDictionary->fromStringId($ingredient->getItemId());
-			$meta = self::RECIPE_INPUT_WILDCARD_META;
-			$descriptor = new IntIdMetaItemDescriptor($id, $meta);
+			// IntIdMetaItemDescriptor is banned since protocol 1.26.40 — use StringIdMetaItemDescriptor.
+			$descriptor = new StringIdMetaItemDescriptor($ingredient->getItemId(), self::RECIPE_INPUT_WILDCARD_META);
 		}elseif($ingredient instanceof ExactRecipeIngredient){
 			$item = $ingredient->getItem();
 			[$id, $meta, $blockRuntimeId] = $this->itemTranslator->toNetworkId($item);
@@ -159,7 +159,9 @@ class TypeConverter{
 					throw new AssumptionFailedError("Every block state should have an associated meta value");
 				}
 			}
-			$descriptor = new IntIdMetaItemDescriptor($id, $meta);
+			// IntIdMetaItemDescriptor is banned since protocol 1.26.40 — use StringIdMetaItemDescriptor.
+			$stringId = $this->itemTypeDictionary->fromIntId($id);
+			$descriptor = new StringIdMetaItemDescriptor($stringId, $meta);
 		}elseif($ingredient instanceof TagWildcardRecipeIngredient){
 			$descriptor = new TagItemDescriptor($ingredient->getTagName());
 		}else{

@@ -30,6 +30,7 @@ use pocketmine\network\mcpe\InventoryManager;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\ItemRegistryPacket;
 use pocketmine\network\mcpe\protocol\PlayerAuthInputPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
 use pocketmine\network\mcpe\protocol\ServerboundLoadingScreenPacket;
 use pocketmine\network\mcpe\protocol\StartGamePacket;
@@ -41,6 +42,7 @@ use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\LevelSettings;
 use pocketmine\network\mcpe\protocol\types\NetworkPermissions;
 use pocketmine\network\mcpe\protocol\types\PlayerMovementSettings;
+use pocketmine\network\mcpe\protocol\types\ServerAuthMovementMode;
 use pocketmine\network\mcpe\protocol\types\ServerTelemetryData;
 use pocketmine\network\mcpe\protocol\types\SpawnSettings;
 use pocketmine\player\Player;
@@ -126,66 +128,69 @@ class PreSpawnPacketHandler extends PacketHandler{
 			// experiment that the client binary does not recognise causes a disconnect.
 			$levelSettings->experiments = new Experiments([], false);
 
+			// 26.50+ clients validate jigsaw structure data while processing StartGamePacket and
+			// disconnect with "Missing structure data from server" if it hasn't arrived yet.
+			if($this->session->getProtocolId() >= ProtocolInfo::PROTOCOL_1_26_50){
+				$this->session->getLogger()->debug("Sending jigsaw structure data");
+				$this->session->sendDataPacket(StaticPacketCache::getInstance()->getJigsawStructureData());
+			}
 			$this->session->sendDataPacket(StartGamePacket::create(
-				// entityUniqueId / entityRuntimeId: both set to the player's server-side entity
-				// ID. The runtime ID is used for fast in-packet entity lookups; the unique ID
-				// is used for persistent cross-session references.
-				$this->player->getId(),
-				$this->player->getId(),
-				$typeConverter->coreGameModeToProtocol($this->player->getGamemode()),
-				$this->player->getOffsetPosition($location),
-				$location->pitch,
-				$location->yaw,
-				// playerPropertyData: opaque NBT compound for experimental property system.
-				// Sending an empty compound is correct; non-empty values require the matching
-				// experiment flag to be set above.
-				new CacheableNbt(CompoundTag::create()),
-				$levelSettings,
-				// levelId: arbitrary opaque string; PM uses empty string (vanilla uses a hash).
-				"",
-				$this->server->getMotd(),
-				// premiumWorldTemplateId: empty = not a Marketplace template world.
-				"",
-				// isTrial: false = full server, not a trial/demo mode session.
-				false,
-				// PlayerMovementSettings:
-				//   movementType=0 (SERVER_AUTH_WITH_REWIND is type 2, legacy server-auth is 0)
-				//   rewindHistorySize=true (unused in type 0, retained for forward compat)
-				// @protocol-version-sensitive: movement type constants may change.
-				new PlayerMovementSettings(0, true),
-				// currentTick: server world tick — 0 is acceptable at spawn; the client will
-				// resync via subsequent packets.
-				0,
-				// enchantmentSeed: used for enchantment table randomisation. 0 = let client
-				// seed itself. PM does not implement server-side enchantment seeds.
-				0,
-				// multiplayerCorrelationId: empty string is valid for non-Xbox Live sessions.
-				"",
-				// enableNewInventorySystem: true enables the stack-based ItemStackRequest
-				// inventory protocol (required since 1.16.100; must be true).
-				true,
-				sprintf("%s %s", VersionInfo::NAME, VersionInfo::VERSION()->getFullVersion(true)),
-				// serverBlockStateChecksum: nil UUID = no checksum enforcement. When PM
-				// implements strict block-state validation this should match the canonical
-				// block state hash from bedrock-data.
-				Uuid::fromString(Uuid::NIL),
-				// worldTemplateOptionsLockedBehaviorPack / worldTemplateOptionsLockedResourcePack:
-				// both false = player may use their own resource packs on top of server packs.
-				false,
-				false,
-				new NetworkPermissions(disableClientSounds: true),
-				// isEditorMode: false — the world editor UI is not supported by PM.
-				// Previously incorrectly set to true, which caused the client to activate
-				// editor-mode-only UI overlays and suppressed normal survival/creative HUD elements.
-				false,
-				null,
-				new ServerTelemetryData("", "", "", ""),
-				[],
-				0,
+				actorUniqueId: $this->player->getId(),
+				actorRuntimeId: $this->player->getId(),
+				playerGamemode: $typeConverter->coreGameModeToProtocol($this->player->getGamemode()),
+				playerPosition: $this->player->getOffsetPosition($location),
+				pitch: $location->pitch,
+				yaw: $location->yaw,
+				// Opaque NBT compound for experimental property system — empty is correct.
+				playerActorProperties: new CacheableNbt(CompoundTag::create()),
+				levelSettings: $levelSettings,
+				// Arbitrary opaque string; PM uses empty (vanilla uses a hash).
+				levelId: "",
+				worldName: $this->server->getMotd(),
+				// Empty = not a Marketplace template world.
+				premiumWorldTemplateId: "",
+				// false = full server, not a trial/demo session.
+				isTrial: false,
+				// SERVER_AUTHORITATIVE_V3 = full server-auth movement.
+				// @protocol-version-sensitive
+				playerMovementSettings: new PlayerMovementSettings(ServerAuthMovementMode::SERVER_AUTHORITATIVE_V3, 0, true),
+				// 0 is acceptable at spawn; client resyncs via subsequent packets.
+				currentTick: 0,
+				// 0 = let client seed itself; PM does not implement server-side enchantment seeds.
+				enchantmentSeed: 0,
+				// Empty string is valid for non-Xbox Live sessions.
+				multiplayerCorrelationId: "",
+				// true = stack-based ItemStackRequest inventory protocol (required since 1.16.100).
+				enableNewInventorySystem: true,
+				serverSoftwareVersion: sprintf("%s %s", VersionInfo::NAME, VersionInfo::VERSION()->getFullVersion(true)),
+				// Nil UUID = no checksum enforcement.
+				worldTemplateId: Uuid::fromString(Uuid::NIL),
+				// false = client-side chunk gen disabled (server sends all chunks).
+				enableClientSideChunkGeneration: false,
+				// Protocol 2192+ (Bedrock 26.50+) requires hashed block network IDs.
+				// Older sessions still use numeric runtime IDs.
+				// BlockStateDictionary is loaded with hashed network IDs (FNV-1a), so every block ID we send is a hash.
+				blockNetworkIdsAreHashes: true,
+				// false = classic death handling.
+				enableTickDeathSystems: false,
+				networkPermissions: new NetworkPermissions(disableClientSounds: true),
+				// false = do not log chat server-side.
+				isLoggingChat: false,
+				serverJoinInformation: null,
+				serverTelemetryData: new ServerTelemetryData("", "", "", ""),
+					// Full block palette from canonical_block_states.nbt — required for the client
+					// to map runtime IDs to block names for rendering. An empty palette causes the
+					// client to self-disconnect with "Missing structure data" immediately after spawn.
+					// Custom (add-on) block definitions only; vanilla states must not be listed here.
+					blockPalette: [],
+					blockPaletteChecksum: 0,
+				// Empty — ItemRegistryPacket sent separately carries the full list.
+				itemTable: [],
 			));
 
 			$this->session->getLogger()->debug("Sending items");
 			$this->session->sendDataPacket(ItemRegistryPacket::create($typeConverter->getItemTypeDictionary()->getEntries()));
+
 
 			$this->session->getLogger()->debug("Sending actor identifiers");
 			$this->session->sendDataPacket(StaticPacketCache::getInstance()->getAvailableActorIdentifiers());

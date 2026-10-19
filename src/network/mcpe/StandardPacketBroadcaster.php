@@ -52,42 +52,49 @@ final class StandardPacketBroadcaster implements PacketBroadcaster{
 
 		$compressors = [];
 
-		$targetsByCompressor = [];
+		// Group recipients by (compressorId, protocolId) so each group gets identically-encoded packets.
+		// Key format: "{compressorId}:{protocolId}"
+		$targetsByGroup = [];
 		foreach($recipients as $recipient){
-			//TODO: different compressors might be compatible, it might not be necessary to split them up by object
 			$compressor = $recipient->getCompressor();
-			$compressors[spl_object_id($compressor)] = $compressor;
-
-			$targetsByCompressor[spl_object_id($compressor)][] = $recipient;
+			$compressorId = spl_object_id($compressor);
+			$compressors[$compressorId] = $compressor;
+			$protocolId = $recipient->getProtocolId();
+			$targetsByGroup[$compressorId . ':' . $protocolId][] = $recipient;
 		}
 
-		$totalLength = 0;
-		$packetBuffers = [];
 		$writer = new ByteBufferWriter();
-		foreach($packets as $packet){
-			$writer->clear(); //memory reuse let's gooooo
-			$buffer = NetworkSession::encodePacketTimed($writer, $packet);
-			//varint length prefix + packet buffer
-			$totalLength += (((int) log(strlen($buffer), 128)) + 1) + strlen($buffer);
-			$packetBuffers[] = $buffer;
-		}
 
-		foreach($targetsByCompressor as $compressorId => $compressorTargets){
+		foreach($targetsByGroup as $groupKey => $groupTargets){
+			// Derive compressorId and protocolId from the group key.
+			[$compressorId, $protocolId] = \explode(':', $groupKey, 2);
+			$compressorId = (int) $compressorId;
+			$protocolId = (int) $protocolId;
 			$compressor = $compressors[$compressorId];
 
+			$totalLength = 0;
+			$packetBuffers = [];
+			foreach($packets as $packet){
+				$writer->clear(); //memory reuse let's gooooo
+				$buffer = NetworkSession::encodePacketTimed($writer, $packet, $protocolId);
+				//varint length prefix + packet buffer
+				$totalLength += (((int) log(strlen($buffer), 128)) + 1) + strlen($buffer);
+				$packetBuffers[] = $buffer;
+			}
+
 			$threshold = $compressor->getCompressionThreshold();
-			if(count($compressorTargets) > 1 && $threshold !== null && $totalLength >= $threshold){
+			if(count($groupTargets) > 1 && $threshold !== null && $totalLength >= $threshold){
 				//do not prepare shared batch unless we're sure it will be compressed
 				$stream = new ByteBufferWriter();
 				PacketBatch::encodeRaw($stream, $packetBuffers);
 				$batchBuffer = $stream->getData();
 
 				$batch = $this->server->prepareBatch($batchBuffer, $compressor, timings: Timings::$playerNetworkSendCompressBroadcast);
-				foreach($compressorTargets as $target){
+				foreach($groupTargets as $target){
 					$target->queueCompressed($batch);
 				}
 			}else{
-				foreach($compressorTargets as $target){
+				foreach($groupTargets as $target){
 					foreach($packetBuffers as $packetBuffer){
 						$target->addToSendBuffer($packetBuffer);
 					}

@@ -172,6 +172,8 @@ class NetworkSession{
 	private bool $loggedIn = false;
 	private bool $authenticated = false;
 	private int $connectTime;
+	/** Protocol version negotiated during the RequestNetworkSettings handshake. */
+	private int $protocolId = ProtocolInfo::CURRENT_PROTOCOL;
 	private ?CompoundTag $cachedOfflinePlayerData = null;
 
 	private ?EncryptionContext $cipher = null;
@@ -532,7 +534,7 @@ class NetworkSession{
 			try{
 				$stream = new ByteBufferReader($buffer);
 				try{
-					$packet->decode($stream);
+					$packet->decode($stream, $this->protocolId);
 				}catch(PacketDecodeException $e){
 					throw PacketHandlingException::wrap($e);
 				}
@@ -610,7 +612,7 @@ class NetworkSession{
 			$writer = new ByteBufferWriter();
 			foreach($packets as $evPacket){
 				$writer->clear(); //memory reuse let's gooooo
-				$this->addToSendBuffer(self::encodePacketTimed($writer, $evPacket));
+				$this->addToSendBuffer(self::encodePacketTimed($writer, $evPacket, $this->protocolId));
 			}
 			if($immediate){
 				$this->flushGamePacketQueue();
@@ -643,15 +645,23 @@ class NetworkSession{
 	/**
 	 * @internal
 	 */
-	public static function encodePacketTimed(ByteBufferWriter $serializer, ClientboundPacket $packet) : string{
+	public static function encodePacketTimed(ByteBufferWriter $serializer, ClientboundPacket $packet, int $protocolId = ProtocolInfo::CURRENT_PROTOCOL) : string{
 		$timings = Timings::getEncodeDataPacketTimings($packet);
 		$timings->startTiming();
 		try{
-			$packet->encode($serializer);
+			$packet->encode($serializer, $protocolId);
 			return $serializer->getData();
 		}finally{
 			$timings->stopTiming();
 		}
+	}
+
+	public function getProtocolId() : int{
+		return $this->protocolId;
+	}
+
+	public function setProtocolId(int $protocolId) : void{
+		$this->protocolId = $protocolId;
 	}
 
 	/**
@@ -827,7 +837,7 @@ class NetworkSession{
 		}else{
 			$translated = $message;
 		}
-		$this->sendDataPacket(DisconnectPacket::create(0, $translated, ""));
+		$this->sendDataPacket(DisconnectPacket::create(0, $translated, null));
 	}
 
 	/**
@@ -871,7 +881,7 @@ class NetworkSession{
 	public function transfer(string $ip, int $port, Translatable|string|null $reason = null) : void{
 		$reason ??= KnownTranslationFactory::pocketmine_disconnect_transfer();
 		$this->tryDisconnect(function() use ($ip, $port, $reason) : void{
-			$this->sendDataPacket(TransferPacket::create($ip, $port, false), true);
+			$this->sendDataPacket(TransferPacket::create($ip, $port, false, null), true);
 			if($this->player !== null){
 				$this->player->onPostDisconnect($reason, null);
 			}
@@ -1283,7 +1293,7 @@ class NetworkSession{
 	 */
 	public function startUsingChunk(int $chunkX, int $chunkZ, \Closure $onCompletion) : void{
 		$world = ($this->player ?? throw new AssumptionFailedError())->getLocation()->getWorld();
-		$promiseOrPacket = ChunkCache::getInstance($world, $this->compressor)->request($chunkX, $chunkZ);
+		$promiseOrPacket = ChunkCache::getInstance($world, $this->compressor)->request($chunkX, $chunkZ, $this->protocolId);
 		if(is_string($promiseOrPacket)){
 			$this->sendChunkPacket($promiseOrPacket, $onCompletion, $world);
 			return;

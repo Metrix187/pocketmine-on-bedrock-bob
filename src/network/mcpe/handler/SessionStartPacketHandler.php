@@ -51,6 +51,9 @@ final class SessionStartPacketHandler extends PacketHandler{
 			return true;
 		}
 
+		// Store the negotiated protocol ID so encode/decode use the correct version.
+		$this->session->setProtocolId($protocolVersion);
+
 		// NetworkSettingsPacket fields (as of bedrock-protocol ~58.x / bedrock-1.26.30):
 		// - compressionThreshold: COMPRESS_EVERYTHING = 1 (compress all game packets)
 		// - compressionAlgorithm: negotiated from server-side Compressor implementation

@@ -47,15 +47,16 @@ final class VersionInfo{
 	 * Update this constant whenever the bedrock-protocol dependency is bumped.
 	 * Full protocol history: src/network/mcpe/ProtocolVersionChangelog.php
 	 *
-	 * Current: bedrock-1.26.30 — protocol 858
+	 * Current: bedrock-26.44 — protocol 2169
+	 * Accepted: 26.50 (protocol 2192), 26.51/26.52 (protocol 2193)
 	 */
-	public const BEDROCK_PROTOCOL_VERSION = 858;
+	public const BEDROCK_PROTOCOL_VERSION = 2169;
 
 	/**
 	 * Human-readable Minecraft Bedrock version string matching BEDROCK_PROTOCOL_VERSION.
 	 * Update alongside BEDROCK_PROTOCOL_VERSION.
 	 */
-	public const BEDROCK_VERSION_DISPLAY = "1.26.30";
+	public const BEDROCK_VERSION_DISPLAY = "26.44";
 
 	/**
 	 * PocketMine-MP-specific version ID for world data. Used to determine what fixes need to be applied to old world
