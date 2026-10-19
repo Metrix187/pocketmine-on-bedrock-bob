@@ -21,7 +21,7 @@ Work shown here took place during September 28 - October 18, 2026.
 ## Demo video
 
 [Watch the Unlisted demo on YouTube](https://youtu.be/C2YtDaEYOCM).
-The downloadable MP4 is exactly 2:45. YouTube displays it as 2:46 after processing.
+The captioned demo runs 2:45 with silent audio.
 
 ## Run the verified demo
 
