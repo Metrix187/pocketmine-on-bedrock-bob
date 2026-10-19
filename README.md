@@ -18,6 +18,11 @@ Work shown here took place during September 28 - October 18, 2026.
 - Human-provided 26.52 fixes address jigsaw packet ordering and hashed block IDs. Bob applied/reviewed these and drove the live retry loop. See `docs/bob-sessions/04-session-excerpt.md`.
 - Tonight's video-production session regenerated the export's Composer autoloader and built the PHAR from the local working tree. These packaging steps were performed by the production assistant, not attributed to Bob.
 
+## Demo video
+
+[Watch the Unlisted demo on YouTube](https://youtu.be/C2YtDaEYOCM).
+The downloadable MP4 is exactly 2:45. YouTube displays it as 2:46 after processing.
+
 ## Run the verified demo
 
 Download **pocketmine-bob-local-build.zip** from this repository's demo release.
@@ -66,3 +71,4 @@ Reproduce the build from pinned clean dependencies, run the full automated test 
 
 PocketMine-MP is LGPL-3.0 licensed. Existing upstream history and license are preserved.
 Amber-PM BedrockProtocol and BedrockData are included as the local dependency sources used for the demo. Their licenses remain in their folders.
+
