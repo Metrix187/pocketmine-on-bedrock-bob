@@ -108,8 +108,21 @@ final class BedrockDataFiles{
 HEADER
 );
 
-foreach($consts as $constName => $fileName){
-	fwrite($output, "\tpublic const " . constantify($fileName) . " = BEDROCK_DATA_PATH . '/$fileName';\n");
+// Preserve the demo's selected 26.50 data when regenerating the generic constants.
+// Both the baseline and versioned files remain available through their own constants.
+$selectedDataFiles = [
+	'block_state_meta_map.json' => 'block_state_meta_map-1.26.50.json',
+	'canonical_block_states.nbt' => 'canonical_block_states-1.26.50.nbt',
+	'required_item_list.json' => 'required_item_list-1.26.50.json',
+];
+
+foreach($consts as $fileName){
+	$selectedFile = $selectedDataFiles[$fileName] ?? $fileName;
+	if(!is_file(Path::join(BEDROCK_DATA_PATH, $selectedFile)) && !is_dir(Path::join(BEDROCK_DATA_PATH, $selectedFile))){
+		fwrite(STDERR, "Missing selected Bedrock data file: $selectedFile" . PHP_EOL);
+		exit(1);
+	}
+	fwrite($output, "\tpublic const " . constantify($fileName) . " = BEDROCK_DATA_PATH . '/$selectedFile';\n");
 }
 
 fwrite($output, "}\n");

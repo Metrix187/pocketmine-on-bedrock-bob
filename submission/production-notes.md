@@ -28,6 +28,8 @@ The production assistant repaired Composer's mismatched manifest/lockfile by ins
 
 PHP-CS-Fixer 3.75 applied the ten formatting changes reported by CI. Three login-test fixtures were corrected to match the installed OpenID JWT models without relaxing validation. Local Windows PHP 8.4.16 PHPUnit results: 226 tests, 72,618 assertions, no failures/errors, 1 skipped, 28 deprecation notices. PHPStan still reports 116 findings. Remote checks remain authoritative for Linux/PHP-version coverage; no full green CI is claimed. Published MP4/PDF/deployment artifacts retain their original hashes and provenance.
 
+The first repair's GitHub run passed PHPUnit and server integration on PHP 8.2, 8.3, 8.4 and 8.5, plus code style, ShellCheck and translation checks. Generated-code consistency exposed manually selected 26.50 data paths that the original generator would overwrite. The generator now preserves those selections and emits the additional versioned constants; this retains the demo's existing data paths rather than switching its block/item registries back to older data.
+
 The runtime demo is local. The submission's demo link points to a runnable package and testing instructions, rather than claiming an internet-hosted server.
 
 ## Delivery
