@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "37e9c6a5abcd20f612312c25981e3b98",
+    "content-hash": "f0078bfabdd73d726e1b0956e1632a42",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -222,16 +222,16 @@
         },
         {
             "name": "pocketmine/bedrock-item-upgrade-schema",
-            "version": "1.18.0",
+            "version": "1.19.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/opencollab-incubator/BedrockItemUpgradeSchema.git",
-                "reference": "7f551f625fee3be0c8d33be1fee295c7ec6a277e"
+                "reference": "dfc12b388be886ba6980d9a3b67cb1b432b563e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/opencollab-incubator/BedrockItemUpgradeSchema/zipball/7f551f625fee3be0c8d33be1fee295c7ec6a277e",
-                "reference": "7f551f625fee3be0c8d33be1fee295c7ec6a277e",
+                "url": "https://api.github.com/repos/opencollab-incubator/BedrockItemUpgradeSchema/zipball/dfc12b388be886ba6980d9a3b67cb1b432b563e2",
+                "reference": "dfc12b388be886ba6980d9a3b67cb1b432b563e2",
                 "shasum": ""
             },
             "type": "library",
@@ -242,10 +242,10 @@
             "description": "JSON schemas for upgrading items found in older Minecraft: Bedrock world saves",
             "support": {
                 "issues": "https://github.com/opencollab-incubator/BedrockItemUpgradeSchema/issues",
-                "source": "https://github.com/opencollab-incubator/BedrockItemUpgradeSchema/tree/1.18.0"
+                "source": "https://github.com/opencollab-incubator/BedrockItemUpgradeSchema/tree/1.19.0"
             },
             "abandoned": true,
-            "time": "2026-09-18T11:45:27+00:00"
+            "time": "2026-10-28T00:27:43+00:00"
         },
         {
             "name": "pocketmine/bedrock-protocol",
