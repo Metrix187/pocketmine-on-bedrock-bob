@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "37e9c6a5abcd20f612312c25981e3b98",
+    "content-hash": "3a192c577d720bdff489e105c05a2af5",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -178,16 +178,16 @@
         },
         {
             "name": "pocketmine/bedrock-block-upgrade-schema",
-            "version": "5.3.0",
+            "version": "5.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/opencollab-incubator/BedrockBlockUpgradeSchema.git",
-                "reference": "4e874a162c4d41a9db7df72980e97849d6942d5d"
+                "reference": "1077ee640ed39f60266f7a7c8ab331ef76d7931e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/opencollab-incubator/BedrockBlockUpgradeSchema/zipball/4e874a162c4d41a9db7df72980e97849d6942d5d",
-                "reference": "4e874a162c4d41a9db7df72980e97849d6942d5d",
+                "url": "https://api.github.com/repos/opencollab-incubator/BedrockBlockUpgradeSchema/zipball/1077ee640ed39f60266f7a7c8ab331ef76d7931e",
+                "reference": "1077ee640ed39f60266f7a7c8ab331ef76d7931e",
                 "shasum": ""
             },
             "type": "library",
@@ -198,10 +198,10 @@
             "description": "Schemas describing how to upgrade saved block data in older Minecraft: Bedrock Edition world saves",
             "support": {
                 "issues": "https://github.com/opencollab-incubator/BedrockBlockUpgradeSchema/issues",
-                "source": "https://github.com/opencollab-incubator/BedrockBlockUpgradeSchema/tree/5.3.0"
+                "source": "https://github.com/opencollab-incubator/BedrockBlockUpgradeSchema/tree/5.4.1"
             },
             "abandoned": true,
-            "time": "2026-09-18T11:39:17+00:00"
+            "time": "2026-10-28T00:38:11+00:00"
         },
         {
             "name": "pocketmine/bedrock-data",
